@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LinenBoard</title>
+    <meta name="description" content="Housekeeping linen requests for laundry." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600;700&family=Fraunces:opsz,wght@9..144,650;9..144,700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">LinenBoard</div>
+      <button type="button" class="btn btn-primary btn-header" id="goto-request">I need linens</button>
+    </header>
+
+    <main>
+      <section id="view-board" class="view is-active">
+        <header class="page-head page-head-row">
+          <h1>Laundry requests</h1>
+          <div class="clear-actions">
+            <button type="button" class="btn btn-soft btn-header" id="clear-history">Clear history</button>
+            <button type="button" class="btn btn-danger btn-header" id="clear-all">Clear everything</button>
+          </div>
+        </header>
+
+        <div id="board-columns" class="board-columns" aria-live="polite"></div>
+
+        <section class="history-section" aria-labelledby="history-title">
+          <h2 id="history-title" class="history-title">History</h2>
+          <div id="history-list" class="history-list"></div>
+        </section>
+      </section>
+
+      <section id="view-request" class="view" hidden>
+        <header class="page-head">
+          <button type="button" class="back-link" id="back-to-board">← Back</button>
+          <h1>What do you need?</h1>
+        </header>
+
+        <form id="request-form" class="form-card" novalidate>
+          <label class="field">
+            <span>Your name</span>
+            <input id="requester-name" name="name" type="text" required placeholder="Linda" autocomplete="name" />
+          </label>
+
+          <label class="field">
+            <span>Floor or room</span>
+            <input id="floor-area" name="area" type="text" required placeholder="Floor 3 / Room 312" />
+          </label>
+
+          <div class="field">
+            <span>Items</span>
+            <div id="linen-items" class="linen-items"></div>
+          </div>
+
+          <label class="urgent-check">
+            <input type="checkbox" id="priority-urgent" name="urgent" />
+            <span>This is urgent</span>
+          </label>
+
+          <label class="field">
+            <span>Note for laundry <span class="optional">(optional)</span></span>
+            <input id="notes" name="notes" type="text" placeholder="Leave at floor closet" />
+          </label>
+
+          <button type="submit" class="btn btn-primary btn-wide">Send request</button>
+        </form>
+
+        <div id="request-success" class="success-card" hidden>
+          <h2>Sent</h2>
+          <p>Your request is on the board.</p>
+          <button type="button" class="btn btn-primary btn-wide" id="success-back">Show board</button>
+          <button type="button" class="btn btn-soft btn-wide" id="another-request">Send another</button>
+        </div>
+      </section>
+    </main>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+    <script src="app.js"></script>
+  </body>
+</html>

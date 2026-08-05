@@ -1,0 +1,16 @@
+{
+  "name": "laundry-requests",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node server.cjs",
+    "dev": "node server.cjs",
+    "public": "npx --yes cloudflared tunnel --url http://localhost:5173",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^5.4.11"
+  }
+}
