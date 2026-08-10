@@ -6,13 +6,16 @@ const { randomUUID } = require("crypto");
 const PORT = Number(process.env.PORT) || 5173;
 const ROOT = __dirname;
 const DATA_DIR = path.join(ROOT, "data");
-const DATA_FILE = path.join(DATA_DIR, "requests.json");
+const REQUESTS_FILE = path.join(DATA_DIR, "requests.json");
+const CART_FILE = path.join(DATA_DIR, "cart.json");
+const CHECKLIST_FILE = path.join(DATA_DIR, "checklist.json");
 
 const TYPES = {
   ".html": "text/html; charset=utf-8",
   ".css": "text/css; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
   ".json": "application/json; charset=utf-8",
+  ".webmanifest": "application/manifest+json; charset=utf-8",
   ".svg": "image/svg+xml",
   ".png": "image/png",
   ".jpg": "image/jpeg",
@@ -22,81 +25,41 @@ const TYPES = {
 };
 
 const STATUS_FLOW = ["needed", "working", "ready", "delivered"];
+const CART_FLOW = ["needed", "filling", "done"];
 const ROLES = ["housekeeping", "laundry", "manager"];
 
-function ensureData() {
+function ensureDir() {
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-  if (!fs.existsSync(DATA_FILE)) {
-    const now = Date.now();
-    const seed = [
-      {
-        id: randomUUID(),
-        name: "Maya",
-        area: "Floor 2",
-        items: [
-          { key: "face-cloths", label: "Face cloths", qty: 20 },
-          { key: "bath-towels", label: "Bath towels", qty: 12 },
-        ],
-        priority: "normal",
-        notes: "Housekeeping closet near elevators",
-        status: "working",
-        comments: [
-          {
-            id: randomUUID(),
-            role: "housekeeping",
-            name: "Maya",
-            text: "Leave at floor closet near elevators",
-            createdAt: now - 1000 * 60 * 45,
-          },
-          {
-            id: randomUUID(),
-            role: "laundry",
-            name: "Sam",
-            text: "Towels are in the dryer — about 15 min",
-            createdAt: now - 1000 * 60 * 20,
-          },
-        ],
-        createdAt: now - 1000 * 60 * 45,
-        updatedAt: now - 1000 * 60 * 10,
-      },
-      {
-        id: randomUUID(),
-        name: "Chris",
-        area: "Floor 5 / Suites",
-        items: [
-          { key: "king-sheets", label: "King sheets", qty: 4 },
-          { key: "pillowcases", label: "Pillowcases", qty: 8 },
-        ],
-        priority: "urgent",
-        notes: "Checkout turnovers",
-        status: "needed",
-        comments: [
-          {
-            id: randomUUID(),
-            role: "housekeeping",
-            name: "Chris",
-            text: "Need before checkout turnovers",
-            createdAt: now - 1000 * 60 * 12,
-          },
-          {
-            id: randomUUID(),
-            role: "manager",
-            name: "Alex",
-            text: "Priority for suites — please rush",
-            createdAt: now - 1000 * 60 * 8,
-          },
-        ],
-        createdAt: now - 1000 * 60 * 12,
-        updatedAt: now - 1000 * 60 * 8,
-      },
-    ];
-    fs.writeFileSync(DATA_FILE, JSON.stringify(seed, null, 2));
+}
+
+function readJson(file, fallback) {
+  ensureDir();
+  if (!fs.existsSync(file)) {
+    fs.writeFileSync(file, JSON.stringify(fallback, null, 2));
+    return fallback;
   }
+  try {
+    const parsed = JSON.parse(fs.readFileSync(file, "utf8"));
+    return parsed ?? fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeJson(file, data) {
+  ensureDir();
+  fs.writeFileSync(file, JSON.stringify(data, null, 2));
+}
+
+function ensureData() {
+  ensureDir();
+  if (!fs.existsSync(REQUESTS_FILE)) writeJson(REQUESTS_FILE, []);
+  if (!fs.existsSync(CART_FILE)) writeJson(CART_FILE, []);
+  if (!fs.existsSync(CHECKLIST_FILE)) writeJson(CHECKLIST_FILE, []);
 }
 
 function normalizeRequest(r) {
   const comments = Array.isArray(r.comments) ? r.comments : [];
-  // Older requests only had a notes field — keep it as a housekeeping comment once.
   if (!comments.length && r.notes) {
     comments.push({
       id: randomUUID(),
@@ -110,20 +73,30 @@ function normalizeRequest(r) {
 }
 
 function readRequests() {
-  ensureData();
-  try {
-    const raw = fs.readFileSync(DATA_FILE, "utf8");
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed.map(normalizeRequest);
-  } catch {
-    return [];
-  }
+  const parsed = readJson(REQUESTS_FILE, []);
+  return Array.isArray(parsed) ? parsed.map(normalizeRequest) : [];
 }
 
 function writeRequests(list) {
-  ensureData();
-  fs.writeFileSync(DATA_FILE, JSON.stringify(list, null, 2));
+  writeJson(REQUESTS_FILE, list);
+}
+
+function readCart() {
+  const parsed = readJson(CART_FILE, []);
+  return Array.isArray(parsed) ? parsed : [];
+}
+
+function writeCart(list) {
+  writeJson(CART_FILE, list);
+}
+
+function readChecklist() {
+  const parsed = readJson(CHECKLIST_FILE, []);
+  return Array.isArray(parsed) ? parsed : [];
+}
+
+function writeChecklist(list) {
+  writeJson(CHECKLIST_FILE, list);
 }
 
 function sendJson(res, status, body) {
@@ -132,7 +105,7 @@ function sendJson(res, status, body) {
     "Content-Type": "application/json; charset=utf-8",
     "Cache-Control": "no-store",
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET,POST,PATCH,OPTIONS",
+    "Access-Control-Allow-Methods": "GET,POST,PATCH,DELETE,OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
   });
   res.end(payload);
@@ -155,10 +128,22 @@ function readBody(req) {
   });
 }
 
-function nextStatus(status) {
-  const idx = STATUS_FLOW.indexOf(status);
-  if (idx === -1 || idx >= STATUS_FLOW.length - 1) return null;
-  return STATUS_FLOW[idx + 1];
+function nextInFlow(flow, status) {
+  const idx = flow.indexOf(status);
+  if (idx === -1 || idx >= flow.length - 1) return null;
+  return flow[idx + 1];
+}
+
+function parseItems(body) {
+  return Array.isArray(body.items)
+    ? body.items
+        .map((item) => ({
+          key: String(item.key || ""),
+          label: String(item.label || item.key || ""),
+          qty: Math.max(0, Number(item.qty) || 0),
+        }))
+        .filter((item) => item.key && item.qty > 0)
+    : [];
 }
 
 function serveStatic(req, res, urlPath) {
@@ -186,6 +171,7 @@ async function handleApi(req, res, urlPath) {
     return;
   }
 
+  // ---- Laundry requests ----
   if (urlPath === "/api/requests" && req.method === "GET") {
     sendJson(res, 200, { requests: readRequests() });
     return;
@@ -220,15 +206,7 @@ async function handleApi(req, res, urlPath) {
     const area = String(body.area || "").trim();
     const notes = String(body.notes || "").trim();
     const priority = body.priority === "urgent" ? "urgent" : "normal";
-    const items = Array.isArray(body.items)
-      ? body.items
-          .map((item) => ({
-            key: String(item.key || ""),
-            label: String(item.label || item.key || ""),
-            qty: Math.max(0, Number(item.qty) || 0),
-          }))
-          .filter((item) => item.key && item.qty > 0)
-      : [];
+    const items = parseItems(body);
 
     if (!name || !area || !items.length) {
       sendJson(res, 400, { error: "Name, area, and at least one linen item are required." });
@@ -237,15 +215,7 @@ async function handleApi(req, res, urlPath) {
 
     const createdAt = Date.now();
     const comments = notes
-      ? [
-          {
-            id: randomUUID(),
-            role: "housekeeping",
-            name,
-            text: notes,
-            createdAt,
-          },
-        ]
+      ? [{ id: randomUUID(), role: "housekeeping", name, text: notes, createdAt }]
       : [];
 
     const entry = {
@@ -272,15 +242,7 @@ async function handleApi(req, res, urlPath) {
   if (itemsMatch && req.method === "POST") {
     const id = decodeURIComponent(itemsMatch[1]);
     const body = await readBody(req);
-    const extras = Array.isArray(body.items)
-      ? body.items
-          .map((item) => ({
-            key: String(item.key || ""),
-            label: String(item.label || item.key || ""),
-            qty: Math.max(0, Number(item.qty) || 0),
-          }))
-          .filter((item) => item.key && item.qty > 0)
-      : [];
+    const extras = parseItems(body);
 
     if (!extras.length) {
       sendJson(res, 400, { error: "Add at least one item." });
@@ -293,16 +255,13 @@ async function handleApi(req, res, urlPath) {
       sendJson(res, 404, { error: "Request not found." });
       return;
     }
-
     if (list[idx].status === "delivered") {
       sendJson(res, 400, { error: "Can't add items to a delivered request." });
       return;
     }
 
     const merged = new Map();
-    for (const item of list[idx].items || []) {
-      merged.set(item.key, { ...item });
-    }
+    for (const item of list[idx].items || []) merged.set(item.key, { ...item });
     for (const item of extras) {
       if (merged.has(item.key)) {
         const cur = merged.get(item.key);
@@ -315,14 +274,13 @@ async function handleApi(req, res, urlPath) {
     const who = String(body.name || "").trim();
     const comments = Array.isArray(list[idx].comments) ? [...list[idx].comments] : [];
     if (who) {
-      const summary = extras.map((i) => `${i.qty} ${i.label}`).join(", ");
       comments.push({
         id: randomUUID(),
         role: ROLES.includes(String(body.role || "").toLowerCase())
           ? String(body.role).toLowerCase()
           : "housekeeping",
         name: who,
-        text: `Added more: ${summary}`,
+        text: `Added more: ${extras.map((i) => `${i.qty} ${i.label}`).join(", ")}`,
         createdAt: Date.now(),
       });
     }
@@ -362,21 +320,10 @@ async function handleApi(req, res, urlPath) {
       return;
     }
 
-    const comment = {
-      id: randomUUID(),
-      role,
-      name,
-      text,
-      createdAt: Date.now(),
-    };
-
+    const comment = { id: randomUUID(), role, name, text, createdAt: Date.now() };
     const comments = Array.isArray(list[idx].comments) ? list[idx].comments : [];
     comments.push(comment);
-    list[idx] = {
-      ...list[idx],
-      comments,
-      updatedAt: Date.now(),
-    };
+    list[idx] = { ...list[idx], comments, updatedAt: Date.now() };
     writeRequests(list);
     sendJson(res, 201, { request: list[idx], comment });
     return;
@@ -397,7 +344,7 @@ async function handleApi(req, res, urlPath) {
     let laundryNotes = list[idx].laundryNotes || "";
 
     if (body.action === "advance") {
-      const nxt = nextStatus(status);
+      const nxt = nextInFlow(STATUS_FLOW, status);
       if (!nxt) {
         sendJson(res, 400, { error: "Already at final status." });
         return;
@@ -412,14 +359,163 @@ async function handleApi(req, res, urlPath) {
       return;
     }
 
-    list[idx] = {
-      ...list[idx],
-      status,
-      laundryNotes,
-      updatedAt: Date.now(),
-    };
+    list[idx] = { ...list[idx], status, laundryNotes, updatedAt: Date.now() };
     writeRequests(list);
     sendJson(res, 200, { request: list[idx] });
+    return;
+  }
+
+  // ---- Cart fill ----
+  if (urlPath === "/api/cart" && req.method === "GET") {
+    sendJson(res, 200, { cart: readCart() });
+    return;
+  }
+
+  if (urlPath === "/api/cart/clear" && req.method === "POST") {
+    const body = await readBody(req);
+    const scope = String(body.scope || "done").toLowerCase();
+    const list = readCart();
+    if (scope === "all") {
+      writeCart([]);
+      sendJson(res, 200, { cleared: list.length, cart: [] });
+      return;
+    }
+    const remaining = list.filter((r) => r.status !== "done");
+    writeCart(remaining);
+    sendJson(res, 200, { cleared: list.length - remaining.length, cart: remaining });
+    return;
+  }
+
+  if (urlPath === "/api/cart" && req.method === "POST") {
+    const body = await readBody(req);
+    const name = String(body.name || "").trim();
+    const notes = String(body.notes || "").trim();
+    const items = parseItems(body);
+
+    if (!name || !items.length) {
+      sendJson(res, 400, { error: "Name and at least one cart item are required." });
+      return;
+    }
+
+    const createdAt = Date.now();
+    const entry = {
+      id: randomUUID(),
+      name,
+      items,
+      notes,
+      status: "needed",
+      createdAt,
+      updatedAt: createdAt,
+    };
+    const list = readCart();
+    list.unshift(entry);
+    writeCart(list);
+    sendJson(res, 201, { order: entry });
+    return;
+  }
+
+  const cartPatch = urlPath.match(/^\/api\/cart\/([^/]+)$/);
+  if (cartPatch && req.method === "PATCH") {
+    const id = decodeURIComponent(cartPatch[1]);
+    const body = await readBody(req);
+    const list = readCart();
+    const idx = list.findIndex((r) => r.id === id);
+    if (idx === -1) {
+      sendJson(res, 404, { error: "Cart order not found." });
+      return;
+    }
+
+    let status = list[idx].status;
+    if (body.action === "advance") {
+      const nxt = nextInFlow(CART_FLOW, status);
+      if (!nxt) {
+        sendJson(res, 400, { error: "Already done." });
+        return;
+      }
+      status = nxt;
+    } else {
+      sendJson(res, 400, { error: "Invalid update." });
+      return;
+    }
+
+    list[idx] = { ...list[idx], status, updatedAt: Date.now() };
+    writeCart(list);
+    sendJson(res, 200, { order: list[idx] });
+    return;
+  }
+
+  // ---- Manager checklist ----
+  if (urlPath === "/api/checklist" && req.method === "GET") {
+    sendJson(res, 200, { items: readChecklist() });
+    return;
+  }
+
+  if (urlPath === "/api/checklist" && req.method === "POST") {
+    const body = await readBody(req);
+    const text = String(body.text || "").trim();
+    const manager = String(body.manager || "").trim();
+
+    if (!text || !manager) {
+      sendJson(res, 400, { error: "Checklist text and manager name are required." });
+      return;
+    }
+
+    const createdAt = Date.now();
+    const entry = {
+      id: randomUUID(),
+      text,
+      manager,
+      done: false,
+      createdAt,
+      updatedAt: createdAt,
+    };
+    const list = readChecklist();
+    list.unshift(entry);
+    writeChecklist(list);
+    sendJson(res, 201, { item: entry });
+    return;
+  }
+
+  if (urlPath === "/api/checklist/clear-done" && req.method === "POST") {
+    const list = readChecklist();
+    const remaining = list.filter((i) => !i.done);
+    writeChecklist(remaining);
+    sendJson(res, 200, { cleared: list.length - remaining.length, items: remaining });
+    return;
+  }
+
+  const checkPatch = urlPath.match(/^\/api\/checklist\/([^/]+)$/);
+  if (checkPatch && req.method === "PATCH") {
+    const id = decodeURIComponent(checkPatch[1]);
+    const body = await readBody(req);
+    const list = readChecklist();
+    const idx = list.findIndex((i) => i.id === id);
+    if (idx === -1) {
+      sendJson(res, 404, { error: "Checklist item not found." });
+      return;
+    }
+
+    if (typeof body.done === "boolean") {
+      list[idx] = { ...list[idx], done: body.done, updatedAt: Date.now() };
+      writeChecklist(list);
+      sendJson(res, 200, { item: list[idx] });
+      return;
+    }
+
+    sendJson(res, 400, { error: "Invalid update." });
+    return;
+  }
+
+  if (checkPatch && req.method === "DELETE") {
+    const id = decodeURIComponent(checkPatch[1]);
+    const list = readChecklist();
+    const next = list.filter((i) => i.id !== id);
+    if (next.length === list.length) {
+      sendJson(res, 404, { error: "Checklist item not found." });
+      return;
+    }
+    writeChecklist(next);
+    sendJson(res, 200, { ok: true, items: next });
     return;
   }
 

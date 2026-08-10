@@ -1,32 +1,23 @@
 # LinenBoard
 
-Housekeeping linen requests for laundry: face cloths, towels, double sheets, king sheets, pillowcases.
+Housekeeping linen requests for laundry: face cloths, towels, sheets, and more.
 
-## Important about GitHub
+## Public team link
 
-Uploading this to GitHub only saves the **code**.  
-To get a website link your team can open, deploy it once (free) after you push.
+**https://linenboard.onrender.com**
 
-### 1. Push to GitHub
+Everyone on any phone can use that same link. Your computer does not need to stay on.
 
-Create a repo, then upload / push this `laundry-requests` folder.
+> Free Render tip: after idle time the site may take ~30–60 seconds to wake up the first time someone opens it.
 
-### 2. Deploy (so people get a real website link)
+## GitHub
 
-1. Go to [https://render.com](https://render.com) (free)
-2. **New → Web Service**
-3. Connect your GitHub repo
-4. Use:
-   - **Build:** `npm install`
-   - **Start:** `npm start`
-5. Deploy, then share the Render URL (like `https://linenboard.onrender.com`)
+https://github.com/harrypotter-12/linenboard
 
-Anyone with that link can use the same board.
-
-## Run on your computer
+## Run locally
 
 ```bash
 npm start
 ```
 
-Open [http://localhost:5173](http://localhost:5173).
+Open http://localhost:5173

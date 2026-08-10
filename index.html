@@ -2,84 +2,257 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>LinenBoard</title>
-    <meta name="description" content="Housekeeping linen requests for laundry." />
+    <meta name="description" content="Housekeeping linen, cart fill, and team checklist." />
+    <meta name="theme-color" content="#ffffff" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="LinenBoard" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+    <link rel="manifest" href="/site.webmanifest" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600;700&family=Fraunces:opsz,wght@9..144,650;9..144,700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <header class="topbar">
-      <div class="brand">LinenBoard</div>
-      <button type="button" class="btn btn-primary btn-header" id="goto-request">I need linens</button>
-    </header>
-
-    <main>
-      <section id="view-board" class="view is-active">
-        <header class="page-head page-head-row">
-          <h1>Laundry requests</h1>
-          <div class="clear-actions">
-            <button type="button" class="btn btn-soft btn-header" id="clear-history">Clear history</button>
-            <button type="button" class="btn btn-danger btn-header" id="clear-all">Clear everything</button>
+    <div id="role-gate" class="role-gate" hidden>
+      <div class="role-card">
+        <div class="role-brand">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 64 64" fill="none">
+              <rect width="64" height="64" rx="14" fill="#0F2744" />
+              <path d="M14 40c0-8 6-12 12-12h4c4 0 6-2 6-5s-2-5-6-5h-4" stroke="#5FBFB0" stroke-width="3.5" stroke-linecap="round" />
+              <rect x="28" y="18" width="22" height="28" rx="4" fill="#E8F4F2" />
+              <path d="M33 26h12M33 32h12M33 38h8" stroke="#0F2744" stroke-width="2.5" stroke-linecap="round" />
+              <circle cx="46" cy="44" r="7" fill="#5FBFB0" />
+              <path d="M43.5 44.2l1.8 1.8 3.4-3.6" stroke="#0F2744" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </span>
+          <div>
+            <strong>LinenBoard</strong>
+            <small>Sign in for this device</small>
           </div>
-        </header>
-
-        <div id="board-columns" class="board-columns" aria-live="polite"></div>
-
-        <section class="history-section" aria-labelledby="history-title">
-          <h2 id="history-title" class="history-title">History</h2>
-          <div id="history-list" class="history-list"></div>
-        </section>
-      </section>
-
-      <section id="view-request" class="view" hidden>
-        <header class="page-head">
-          <button type="button" class="back-link" id="back-to-board">← Back</button>
-          <h1>What do you need?</h1>
-        </header>
-
-        <form id="request-form" class="form-card" novalidate>
-          <label class="field">
-            <span>Your name</span>
-            <input id="requester-name" name="name" type="text" required placeholder="Linda" autocomplete="name" />
-          </label>
-
-          <label class="field">
-            <span>Floor or room</span>
-            <input id="floor-area" name="area" type="text" required placeholder="Floor 3 / Room 312" />
-          </label>
-
-          <div class="field">
-            <span>Items</span>
-            <div id="linen-items" class="linen-items"></div>
-          </div>
-
-          <label class="urgent-check">
-            <input type="checkbox" id="priority-urgent" name="urgent" />
-            <span>This is urgent</span>
-          </label>
-
-          <label class="field">
-            <span>Note for laundry <span class="optional">(optional)</span></span>
-            <input id="notes" name="notes" type="text" placeholder="Leave at floor closet" />
-          </label>
-
-          <button type="submit" class="btn btn-primary btn-wide">Send request</button>
-        </form>
-
-        <div id="request-success" class="success-card" hidden>
-          <h2>Sent</h2>
-          <p>Your request is on the board.</p>
-          <button type="button" class="btn btn-primary btn-wide" id="success-back">Show board</button>
-          <button type="button" class="btn btn-soft btn-wide" id="another-request">Send another</button>
         </div>
-      </section>
-    </main>
+        <h1>Who are you?</h1>
+        <p>So the board knows how you use it.</p>
+        <label class="field">
+          <span>Your name</span>
+          <input id="gate-name" type="text" placeholder="Your name" autocomplete="name" />
+        </label>
+        <div class="role-picks" role="group" aria-label="Role">
+          <button type="button" class="role-choice" data-role="housekeeping">Housekeeping</button>
+          <button type="button" class="role-choice" data-role="laundry">Laundry</button>
+          <button type="button" class="role-choice" data-role="manager">Manager</button>
+        </div>
+        <button type="button" class="btn btn-primary btn-wide" id="gate-continue">Continue</button>
+      </div>
+    </div>
+
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 64 64" fill="none">
+              <rect width="64" height="64" rx="14" fill="#0F2744" />
+              <path d="M14 40c0-8 6-12 12-12h4c4 0 6-2 6-5s-2-5-6-5h-4" stroke="#5FBFB0" stroke-width="3.5" stroke-linecap="round" />
+              <rect x="28" y="18" width="22" height="28" rx="4" fill="#E8F4F2" />
+              <path d="M33 26h12M33 32h12M33 38h8" stroke="#0F2744" stroke-width="2.5" stroke-linecap="round" />
+              <circle cx="46" cy="44" r="7" fill="#5FBFB0" />
+              <path d="M43.5 44.2l1.8 1.8 3.4-3.6" stroke="#0F2744" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </span>
+          <div>
+            <strong>LinenBoard</strong>
+            <small id="section-label">Laundry board</small>
+          </div>
+        </div>
+        <div class="topbar-right">
+          <div id="live-status" class="live-status is-online" title="Connected">Live</div>
+          <button type="button" class="staff-chip" id="staff-chip" title="Change staff profile">Staff</button>
+        </div>
+      </header>
+
+      <main>
+        <!-- LAUNDRY -->
+        <section id="view-laundry" class="view is-active" data-section="laundry">
+          <div class="section-tabs sticky-tabs" role="tablist" aria-label="Laundry">
+            <button type="button" class="section-tab is-active" data-sub="board">Board</button>
+            <button type="button" class="section-tab" data-sub="request">New order</button>
+            <button type="button" class="section-tab" data-sub="history">History</button>
+          </div>
+
+          <div id="sub-board" class="subview is-active">
+            <div class="board-toolbar">
+              <div id="stats-bar" class="stats-bar" aria-live="polite"></div>
+              <div class="board-toolbar-meta">
+                <span id="board-updated" class="page-sub">Updating…</span>
+                <button type="button" class="btn btn-ghost btn-sm" id="clear-all">Clear</button>
+              </div>
+            </div>
+            <div id="board-columns" class="board-columns" aria-live="polite"></div>
+            <button type="button" class="fab" id="fab-new-order" aria-label="New linen order">+</button>
+          </div>
+
+          <div id="sub-request" class="subview" hidden>
+            <header class="page-head">
+              <h1>New linen order</h1>
+            </header>
+            <form id="request-form" class="form-card" novalidate>
+              <div class="field-grid">
+                <label class="field">
+                  <span>Your name</span>
+                  <input id="requester-name" name="name" type="text" required placeholder="Linda" autocomplete="name" />
+                </label>
+                <label class="field">
+                  <span>Floor / closet</span>
+                  <input id="floor-area" name="area" type="text" required placeholder="Floor 3 closet" />
+                </label>
+              </div>
+              <div class="field">
+                <span>Quick packs</span>
+                <div class="pack-row" id="linen-packs">
+                  <button type="button" class="pack-btn" data-pack="towels">Towel pack</button>
+                  <button type="button" class="pack-btn" data-pack="queen">Queen sheets</button>
+                  <button type="button" class="pack-btn" data-pack="king">King sheets</button>
+                  <button type="button" class="pack-btn" data-pack="suite">Suite rush</button>
+                </div>
+              </div>
+              <div class="field">
+                <span>Linen items</span>
+                <div id="linen-items" class="linen-items"></div>
+              </div>
+              <label class="urgent-check">
+                <input type="checkbox" id="priority-urgent" name="urgent" />
+                <span>Mark as urgent</span>
+              </label>
+              <label class="field">
+                <span>Note for laundry <span class="optional">(optional)</span></span>
+                <input id="notes" name="notes" type="text" placeholder="Leave at floor closet" />
+              </label>
+              <button type="submit" class="btn btn-primary btn-wide">Submit order</button>
+            </form>
+            <div id="request-success" class="success-card" hidden>
+              <div class="success-icon" aria-hidden="true"></div>
+              <h2>Order submitted</h2>
+              <p>Laundry can see it on the board.</p>
+              <button type="button" class="btn btn-primary btn-wide" id="success-back">Back to board</button>
+              <button type="button" class="btn btn-soft btn-wide" id="another-request">New order</button>
+            </div>
+          </div>
+
+          <div id="sub-history" class="subview" hidden>
+            <header class="page-head page-head-row">
+              <h1>Completed</h1>
+              <button type="button" class="btn btn-ghost btn-sm" id="clear-history">Clear history</button>
+            </header>
+            <div id="history-list" class="history-list"></div>
+          </div>
+        </section>
+
+        <!-- CART FILL -->
+        <section id="view-cart" class="view" data-section="cart" hidden>
+          <header class="page-head page-head-row">
+            <h1>Cart fill</h1>
+            <button type="button" class="btn btn-ghost btn-sm" id="clear-cart-done">Clear done</button>
+          </header>
+
+          <details class="composer cart-composer" id="cart-composer">
+            <summary>
+              <span class="composer-icon cart-ico" aria-hidden="true"></span>
+              Request cart fill
+            </summary>
+            <form id="cart-form" class="composer-body">
+              <label class="field">
+                <span>Your name</span>
+                <input id="cart-name" type="text" required placeholder="Your name" autocomplete="name" />
+              </label>
+              <div class="field">
+                <span>What do you need?</span>
+                <div id="cart-items" class="linen-items"></div>
+              </div>
+              <label class="field">
+                <span>Note <span class="optional">(optional)</span></span>
+                <input id="cart-notes" type="text" placeholder="Any special note" />
+              </label>
+              <button type="submit" class="btn btn-cart btn-wide">Send request</button>
+            </form>
+          </details>
+
+          <div id="cart-list" class="simple-list" aria-live="polite"></div>
+        </section>
+
+        <!-- CHECKLIST -->
+        <section id="view-checklist" class="view" data-section="checklist" hidden>
+          <header class="page-head page-head-row">
+            <h1>Team checklist</h1>
+            <button type="button" class="btn btn-ghost btn-sm" id="clear-checklist-done">Clear done</button>
+          </header>
+
+          <details class="composer check-composer" id="check-composer">
+            <summary>
+              <span class="composer-icon check-ico" aria-hidden="true"></span>
+              Add item for team
+            </summary>
+            <form id="checklist-form" class="composer-body">
+              <label class="field">
+                <span>Manager name</span>
+                <input id="manager-name" type="text" required placeholder="Manager name" autocomplete="name" />
+              </label>
+              <label class="field">
+                <span>Checklist item</span>
+                <input id="checklist-text" type="text" required placeholder="e.g. Check linen closet stock" />
+              </label>
+              <button type="submit" class="btn btn-check btn-wide">Post for everyone</button>
+            </form>
+          </details>
+
+          <div id="checklist-list" class="checklist" aria-live="polite"></div>
+        </section>
+      </main>
+
+      <nav class="tabbar tabbar-3" aria-label="Main menu">
+        <button type="button" class="tab is-active" data-nav="laundry" aria-label="Laundry">
+          <span class="tab-svg" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 7h16v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7z" />
+              <path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+              <circle cx="12" cy="14" r="3" />
+            </svg>
+          </span>
+          <span class="tab-label">Laundry</span>
+          <span class="badge" id="badge-laundry" hidden>0</span>
+        </button>
+        <button type="button" class="tab" data-nav="cart" aria-label="Cart fill">
+          <span class="tab-svg" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 5h2l2.2 10.4a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.6L21 8H7" />
+              <circle cx="10" cy="20" r="1.4" />
+              <circle cx="17" cy="20" r="1.4" />
+            </svg>
+          </span>
+          <span class="tab-label">Cart</span>
+          <span class="badge badge-cart" id="badge-cart" hidden>0</span>
+        </button>
+        <button type="button" class="tab" data-nav="checklist" aria-label="Checklist">
+          <span class="tab-svg" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 6h11M9 12h11M9 18h11" />
+              <path d="M4 6.5l1.2 1.2L7.2 5" />
+              <path d="M4 12.5l1.2 1.2L7.2 11" />
+              <path d="M4 18.5l1.2 1.2L7.2 17" />
+            </svg>
+          </span>
+          <span class="tab-label">Tasks</span>
+          <span class="badge badge-tasks" id="badge-checklist" hidden>0</span>
+        </button>
+      </nav>
+    </div>
 
     <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
     <script src="app.js"></script>
