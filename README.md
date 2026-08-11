@@ -8,7 +8,7 @@ Staff sign in with **name + password** and see their week. Managers add people a
 
 **https://linenboard.onrender.com**
 
-(Same Render site as before — now running ShiftBoard, not the old linen request board.)
+Render service name is **shiftboard**. The public link stays `linenboard.onrender.com` because `shiftboard.onrender.com` is already used by another app.
 
 > Free Render tip: after idle time the site may take ~30–60 seconds to wake up the first time someone opens it.
 
