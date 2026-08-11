@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: shiftboard
+    name: linenboard
     runtime: node
     plan: free
     buildCommand: npm install
