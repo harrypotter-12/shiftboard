@@ -3,253 +3,480 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>LinenBoard</title>
-    <meta name="description" content="Housekeeping linen, cart fill, and team checklist." />
-    <meta name="theme-color" content="#ffffff" />
+    <title>ShiftBoard</title>
+    <meta name="description" content="Housekeeping staff schedules — simple sign-in, clear shifts." />
+    <meta name="theme-color" content="#143652" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-title" content="LinenBoard" />
+    <meta name="apple-mobile-web-app-title" content="ShiftBoard" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/favicon.svg" />
     <link rel="manifest" href="/site.webmanifest" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Nunito:wght@500;600;700;800&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <div id="role-gate" class="role-gate" hidden>
-      <div class="role-card">
-        <div class="role-brand">
-          <span class="brand-mark" aria-hidden="true">
+    <div id="login-gate" class="login-gate">
+      <div class="login-atmosphere" aria-hidden="true"></div>
+      <div class="login-shell">
+        <header class="login-hero">
+          <span class="brand-mark brand-mark-lg" aria-hidden="true">
             <svg viewBox="0 0 64 64" fill="none">
-              <rect width="64" height="64" rx="14" fill="#0F2744" />
-              <path d="M14 40c0-8 6-12 12-12h4c4 0 6-2 6-5s-2-5-6-5h-4" stroke="#5FBFB0" stroke-width="3.5" stroke-linecap="round" />
-              <rect x="28" y="18" width="22" height="28" rx="4" fill="#E8F4F2" />
-              <path d="M33 26h12M33 32h12M33 38h8" stroke="#0F2744" stroke-width="2.5" stroke-linecap="round" />
-              <circle cx="46" cy="44" r="7" fill="#5FBFB0" />
-              <path d="M43.5 44.2l1.8 1.8 3.4-3.6" stroke="#0F2744" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+              <rect width="64" height="64" rx="18" fill="#143652" />
+              <rect x="14" y="16" width="36" height="36" rx="9" fill="#EAF3F8" />
+              <path d="M22 28h20M22 34h14M22 40h17" stroke="#143652" stroke-width="3" stroke-linecap="round" />
+              <circle cx="44" cy="42" r="8" fill="#2C9B7F" />
+              <path d="M41 42.2l2 2 4-4.2" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
           </span>
-          <div>
-            <strong>LinenBoard</strong>
-            <small>Sign in for this device</small>
+          <p class="login-kicker">Housekeeping</p>
+          <h1 class="login-brand-title">ShiftBoard</h1>
+          <p class="login-tagline">Tap your name to see your work days.</p>
+        </header>
+
+        <div class="login-panel">
+          <div id="login-step-name" class="login-step is-active">
+            <div class="step-label"><span>1</span> Tap your name</div>
+            <h2>Who are you?</h2>
+            <p class="login-help">Find your name and tap it.</p>
+            <div id="name-picker" class="name-picker" aria-label="Staff names"></div>
+            <p id="name-picker-empty" class="picker-empty" hidden>Loading names…</p>
+            <div class="login-divider"><span>New?</span></div>
+            <button type="button" class="btn btn-soft btn-wide" id="go-signup">I'm new — make my name</button>
+          </div>
+
+          <div id="login-step-pass" class="login-step" hidden>
+            <button type="button" class="back-link" id="login-back">← Back</button>
+            <div class="step-label"><span>2</span> Your password</div>
+            <div class="selected-person" id="selected-person">
+              <span class="avatar" id="selected-avatar">?</span>
+              <div>
+                <strong id="selected-name">Name</strong>
+                <small>Type your short password</small>
+              </div>
+            </div>
+            <form id="login-form" class="login-form" novalidate>
+              <input id="login-name" type="hidden" value="" />
+              <label class="field">
+                <span>Password</span>
+                <div class="password-box">
+                  <input
+                    id="login-password"
+                    type="password"
+                    inputmode="numeric"
+                    autocomplete="current-password"
+                    placeholder="••••"
+                    required
+                  />
+                  <button type="button" class="show-pass" id="toggle-password" aria-pressed="false">Show</button>
+                </div>
+                <small class="field-hint">Usually 4 numbers, like 1234.</small>
+              </label>
+              <p id="login-error" class="form-error" hidden></p>
+              <button type="submit" class="btn btn-primary btn-wide" id="login-submit">
+                See my days
+              </button>
+              <button type="button" class="btn btn-ghost btn-wide" id="forgot-password">
+                Forgot password?
+              </button>
+              <p id="forgot-message" class="field-hint forgot-ok" hidden></p>
+            </form>
+          </div>
+
+          <div id="login-step-signup" class="login-step" hidden>
+            <button type="button" class="back-link" id="signup-back">← Back to sign in</button>
+            <div class="step-label"><span>New</span> Add your name</div>
+            <h2>Make your name</h2>
+            <p class="login-help">Just your name and a short password. That’s it.</p>
+            <form id="signup-form" class="login-form" novalidate>
+              <label class="field">
+                <span>Your first name</span>
+                <input id="signup-name" type="text" autocomplete="name" placeholder="Example: Linda" required />
+              </label>
+              <label class="field">
+                <span>Pick a password</span>
+                <div class="password-box">
+                  <input
+                    id="signup-password"
+                    type="password"
+                    inputmode="numeric"
+                    autocomplete="new-password"
+                    placeholder="••••"
+                    required
+                  />
+                  <button type="button" class="show-pass" id="toggle-signup-password" aria-pressed="false">Show</button>
+                </div>
+                <small class="field-hint">4 numbers is fine — like 1234.</small>
+              </label>
+              <label class="field">
+                <span>Type it again</span>
+                <input
+                  id="signup-confirm"
+                  type="password"
+                  inputmode="numeric"
+                  autocomplete="new-password"
+                  placeholder="••••"
+                  required
+                />
+              </label>
+              <input type="hidden" name="signup-role" value="staff" />
+              <p id="signup-error" class="form-error" hidden></p>
+              <button type="submit" class="btn btn-primary btn-wide" id="signup-submit">Save and see my days</button>
+            </form>
           </div>
         </div>
-        <h1>Who are you?</h1>
-        <p>So the board knows how you use it.</p>
-        <label class="field">
-          <span>Your name</span>
-          <input id="gate-name" type="text" placeholder="Your name" autocomplete="name" />
-        </label>
-        <div class="role-picks" role="group" aria-label="Role">
-          <button type="button" class="role-choice" data-role="housekeeping">Housekeeping</button>
-          <button type="button" class="role-choice" data-role="laundry">Laundry</button>
-          <button type="button" class="role-choice" data-role="manager">Manager</button>
-        </div>
-        <button type="button" class="btn btn-primary btn-wide" id="gate-continue">Continue</button>
       </div>
     </div>
 
-    <div class="app-shell">
+    <div class="app-shell" id="app-shell" hidden>
       <header class="topbar">
         <div class="brand">
           <span class="brand-mark" aria-hidden="true">
             <svg viewBox="0 0 64 64" fill="none">
-              <rect width="64" height="64" rx="14" fill="#0F2744" />
-              <path d="M14 40c0-8 6-12 12-12h4c4 0 6-2 6-5s-2-5-6-5h-4" stroke="#5FBFB0" stroke-width="3.5" stroke-linecap="round" />
-              <rect x="28" y="18" width="22" height="28" rx="4" fill="#E8F4F2" />
-              <path d="M33 26h12M33 32h12M33 38h8" stroke="#0F2744" stroke-width="2.5" stroke-linecap="round" />
-              <circle cx="46" cy="44" r="7" fill="#5FBFB0" />
-              <path d="M43.5 44.2l1.8 1.8 3.4-3.6" stroke="#0F2744" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+              <rect width="64" height="64" rx="18" fill="#143652" />
+              <rect x="14" y="16" width="36" height="36" rx="9" fill="#EAF3F8" />
+              <path d="M22 28h20M22 34h14M22 40h17" stroke="#143652" stroke-width="3" stroke-linecap="round" />
+              <circle cx="44" cy="42" r="8" fill="#2C9B7F" />
+              <path d="M41 42.2l2 2 4-4.2" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
           </span>
           <div>
-            <strong>LinenBoard</strong>
-            <small id="section-label">Laundry board</small>
+            <strong>ShiftBoard</strong>
+            <small id="hello-label">Your schedule</small>
           </div>
         </div>
-        <div class="topbar-right">
-          <div id="live-status" class="live-status is-online" title="Connected">Live</div>
-          <button type="button" class="staff-chip" id="staff-chip" title="Change staff profile">Staff</button>
-        </div>
+        <button type="button" class="btn btn-ghost btn-compact" id="sign-out-btn">Sign out</button>
       </header>
 
       <main>
-        <!-- LAUNDRY -->
-        <section id="view-laundry" class="view is-active" data-section="laundry">
-          <div class="section-tabs sticky-tabs" role="tablist" aria-label="Laundry">
-            <button type="button" class="section-tab is-active" data-sub="board">Board</button>
-            <button type="button" class="section-tab" data-sub="request">New order</button>
-            <button type="button" class="section-tab" data-sub="history">History</button>
-          </div>
+        <div id="reminder-banner" class="reminder-banner" hidden></div>
 
-          <div id="sub-board" class="subview is-active">
-            <div class="board-toolbar">
-              <div id="stats-bar" class="stats-bar" aria-live="polite"></div>
-              <div class="board-toolbar-meta">
-                <span id="board-updated" class="page-sub">Updating…</span>
-                <button type="button" class="btn btn-ghost btn-sm" id="clear-all">Clear</button>
-              </div>
+        <section id="view-today" class="view" data-view="today" hidden>
+          <header class="page-head page-head-row">
+            <div>
+              <h1>Working today</h1>
+              <p id="today-date-label" class="page-sub">Today</p>
             </div>
-            <div id="board-columns" class="board-columns" aria-live="polite"></div>
-            <button type="button" class="fab" id="fab-new-order" aria-label="New linen order">+</button>
+            <div class="head-actions manager-only" hidden>
+              <button type="button" class="btn btn-soft btn-compact" id="share-today">Share</button>
+            </div>
+          </header>
+          <div id="today-team-note" class="team-note" hidden></div>
+          <div id="today-board" class="today-board" aria-live="polite"></div>
+          <div id="today-off" class="today-off" aria-live="polite"></div>
+        </section>
+
+        <section id="view-mine" class="view is-active" data-view="mine">
+          <header class="page-head page-head-row">
+            <div>
+              <h1 id="schedule-title">My days</h1>
+              <p id="schedule-range" class="page-sub">Loading…</p>
+            </div>
+            <div class="head-actions">
+              <button type="button" class="btn btn-soft btn-compact manager-only" id="share-mine" hidden>Share</button>
+              <button type="button" class="btn btn-voice" id="hear-schedule" title="Hear schedule out loud">
+                Read out loud
+              </button>
+            </div>
+          </header>
+
+          <div class="view-switch manager-only" role="tablist" aria-label="Schedule view" hidden>
+            <button type="button" class="view-switch-btn is-active" data-mode="day">Day</button>
+            <button type="button" class="view-switch-btn" data-mode="week">Week</button>
+            <button type="button" class="view-switch-btn" data-mode="month">Month</button>
+          </div>
+          <div class="staff-week-hint staff-only">This week — times for each day</div>
+
+          <div id="staff-guide" class="guide-card" hidden>
+            <strong>No days yet</strong>
+            <p>You’re signed in. Ask your manager to put you on the schedule.</p>
+          </div>
+          <div id="manager-guide" class="guide-card guide-card-manager" hidden>
+            <strong>Make the schedule so people can see their days</strong>
+            <ol>
+              <li>Ask your team to create accounts (or add them in People).</li>
+              <li>Open <b>Make schedule</b> and add each person’s shifts.</li>
+              <li>They sign in and see only their own week.</li>
+            </ol>
+            <button type="button" class="btn btn-primary btn-wide" id="guide-make-schedule">Make schedule now</button>
           </div>
 
-          <div id="sub-request" class="subview" hidden>
-            <header class="page-head">
-              <h1>New linen order</h1>
-            </header>
-            <form id="request-form" class="form-card" novalidate>
+          <div class="week-nav">
+            <button type="button" class="btn btn-soft" id="sched-prev" aria-label="Previous">← Last week</button>
+            <button type="button" class="btn btn-soft" id="sched-today">This week</button>
+            <button type="button" class="btn btn-soft" id="sched-next" aria-label="Next">Next week →</button>
+          </div>
+
+          <div id="month-calendar" class="month-calendar" hidden></div>
+          <div id="my-schedule" class="schedule-list" aria-live="polite"></div>
+        </section>
+
+        <section id="view-team" class="view" data-view="team" hidden>
+          <header class="page-head page-head-row">
+            <div>
+              <h1>Team schedule</h1>
+              <p id="team-range" class="page-sub">Everyone’s shifts</p>
+            </div>
+            <div class="head-actions">
+              <button type="button" class="btn btn-soft btn-compact" id="export-excel">Save Excel</button>
+              <button type="button" class="btn btn-soft btn-compact" id="export-pdf">Save PDF</button>
+              <button type="button" class="btn btn-soft btn-compact" id="share-team">Share</button>
+              <button type="button" class="btn btn-voice" id="hear-team" title="Hear team schedule">Hear</button>
+            </div>
+          </header>
+          <div class="view-switch" role="tablist" aria-label="Team schedule view">
+            <button type="button" class="view-switch-btn is-active" data-team-mode="day">Day</button>
+            <button type="button" class="view-switch-btn" data-team-mode="week">Week</button>
+            <button type="button" class="view-switch-btn" data-team-mode="month">Month</button>
+          </div>
+          <div class="week-nav">
+            <button type="button" class="btn btn-soft" id="team-prev" aria-label="Previous">← Back</button>
+            <button type="button" class="btn btn-soft" id="team-today">Today</button>
+            <button type="button" class="btn btn-soft" id="team-next" aria-label="Next">Next →</button>
+          </div>
+          <div id="team-month-calendar" class="month-calendar" hidden></div>
+          <div id="team-schedule" class="schedule-list" aria-live="polite"></div>
+        </section>
+
+        <section id="view-manage" class="view" data-view="manage" hidden>
+          <header class="page-head">
+            <h1>Make schedule</h1>
+            <p class="page-sub">Tap people, tap days, choose a time</p>
+          </header>
+
+          <div class="info-callout manage-tip">
+            <strong>Quick tip</strong>
+            <p>Tap <b>more than one person</b> and <b>more than one day</b>. Same times are saved for everyone you pick.</p>
+          </div>
+
+          <div class="manage-toolbar">
+            <button type="button" class="btn btn-soft btn-wide" id="copy-last-week">
+              Copy last week → this week
+            </button>
+          </div>
+
+          <h2 class="list-heading">Note for everyone</h2>
+          <form id="note-form" class="form-card" novalidate>
+            <p class="field-hint" style="margin: 0">
+              Everyone sees this note on that day (example: meeting at 2, bring keys).
+            </p>
+            <label class="field">
+              <span>Day</span>
+              <input id="note-date" type="date" required />
+            </label>
+            <label class="field">
+              <span>Note for the team</span>
+              <input id="note-text" type="text" required placeholder="Staff meeting at 2pm" />
+            </label>
+            <button type="submit" class="btn btn-primary btn-wide">Save team note</button>
+          </form>
+          <div id="note-list" class="note-list" aria-live="polite"></div>
+
+          <h2 class="list-heading">Swap shifts</h2>
+          <form id="swap-form" class="form-card" novalidate>
+            <p class="field-hint" style="margin: 0">
+              Trade days between two people. Person A’s shifts move to Person B’s day, and the other way around.
+            </p>
+            <div class="field-grid">
+              <label class="field">
+                <span>Person A</span>
+                <select id="swap-user-a" required>
+                  <option value="">Choose</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Person A’s day</span>
+                <input id="swap-day-a" type="date" required />
+              </label>
+            </div>
+            <div class="field-grid">
+              <label class="field">
+                <span>Person B</span>
+                <select id="swap-user-b" required>
+                  <option value="">Choose</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Person B’s day</span>
+                <input id="swap-day-b" type="date" required />
+              </label>
+            </div>
+            <button type="submit" class="btn btn-primary btn-wide">Swap their shifts</button>
+          </form>
+
+          <form id="shift-form" class="form-card" novalidate>
+            <input type="hidden" id="shift-id" value="" />
+            <input type="hidden" id="shift-user" value="" />
+
+            <div class="field">
+              <span>1. Who <small class="optional" id="people-selected-label">(tap one or more)</small></span>
+              <div class="day-chip-actions">
+                <button type="button" class="btn btn-soft btn-mini" id="people-all">Everyone</button>
+                <button type="button" class="btn btn-soft btn-mini" id="people-clear">Clear people</button>
+              </div>
+              <div id="person-chips" class="chip-row" aria-label="Choose people"></div>
+            </div>
+
+            <div class="field">
+              <span>2. Days <small class="optional" id="days-selected-label">(tap more than one)</small></span>
+              <div class="day-chip-actions">
+                <button type="button" class="btn btn-soft btn-mini" id="days-weekdays">Mon–Fri</button>
+                <button type="button" class="btn btn-soft btn-mini" id="days-clear">Clear days</button>
+              </div>
+              <div id="day-chips" class="chip-row day-chips" aria-label="Choose days"></div>
+              <label class="field date-fallback-wrap">
+                <span>Add another date</span>
+                <input id="shift-date" type="date" class="date-fallback" />
+              </label>
+            </div>
+
+            <div class="field">
+              <span>3. Time</span>
+              <div class="chip-row" id="time-presets">
+                <button type="button" class="quick-chip" data-start="08:00" data-end="16:00">8am – 4pm</button>
+                <button type="button" class="quick-chip" data-start="09:00" data-end="17:00">9am – 5pm</button>
+                <button type="button" class="quick-chip" data-start="09:30" data-end="17:00">9:30 – 5pm</button>
+                <button type="button" class="quick-chip" data-start="08:30" data-end="17:00">8:30 – 5pm</button>
+                <button type="button" class="quick-chip" data-start="07:30" data-end="16:00">7:30 – 4pm</button>
+                <button type="button" class="quick-chip" data-start="07:00" data-end="15:00">7am – 3pm</button>
+                <button type="button" class="quick-chip" data-start="14:00" data-end="22:00">2pm – 10pm</button>
+              </div>
               <div class="field-grid">
                 <label class="field">
-                  <span>Your name</span>
-                  <input id="requester-name" name="name" type="text" required placeholder="Linda" autocomplete="name" />
+                  <span>Start</span>
+                  <input id="shift-start" type="time" required value="08:00" />
                 </label>
                 <label class="field">
-                  <span>Floor / closet</span>
-                  <input id="floor-area" name="area" type="text" required placeholder="Floor 3 closet" />
+                  <span>End</span>
+                  <input id="shift-end" type="time" required value="16:00" />
                 </label>
               </div>
-              <div class="field">
-                <span>Quick packs</span>
-                <div class="pack-row" id="linen-packs">
-                  <button type="button" class="pack-btn" data-pack="towels">Towel pack</button>
-                  <button type="button" class="pack-btn" data-pack="queen">Queen sheets</button>
-                  <button type="button" class="pack-btn" data-pack="king">King sheets</button>
-                  <button type="button" class="pack-btn" data-pack="suite">Suite rush</button>
-                </div>
-              </div>
-              <div class="field">
-                <span>Linen items</span>
-                <div id="linen-items" class="linen-items"></div>
-              </div>
-              <label class="urgent-check">
-                <input type="checkbox" id="priority-urgent" name="urgent" />
-                <span>Mark as urgent</span>
-              </label>
-              <label class="field">
-                <span>Note for laundry <span class="optional">(optional)</span></span>
-                <input id="notes" name="notes" type="text" placeholder="Leave at floor closet" />
-              </label>
-              <button type="submit" class="btn btn-primary btn-wide">Submit order</button>
-            </form>
-            <div id="request-success" class="success-card" hidden>
-              <div class="success-icon" aria-hidden="true"></div>
-              <h2>Order submitted</h2>
-              <p>Laundry can see it on the board.</p>
-              <button type="button" class="btn btn-primary btn-wide" id="success-back">Back to board</button>
-              <button type="button" class="btn btn-soft btn-wide" id="another-request">New order</button>
             </div>
-          </div>
 
-          <div id="sub-history" class="subview" hidden>
-            <header class="page-head page-head-row">
-              <h1>Completed</h1>
-              <button type="button" class="btn btn-ghost btn-sm" id="clear-history">Clear history</button>
-            </header>
-            <div id="history-list" class="history-list"></div>
-          </div>
-        </section>
-
-        <!-- CART FILL -->
-        <section id="view-cart" class="view" data-section="cart" hidden>
-          <header class="page-head page-head-row">
-            <h1>Cart fill</h1>
-            <button type="button" class="btn btn-ghost btn-sm" id="clear-cart-done">Clear done</button>
-          </header>
-
-          <details class="composer cart-composer" id="cart-composer">
-            <summary>
-              <span class="composer-icon cart-ico" aria-hidden="true"></span>
-              Request cart fill
-            </summary>
-            <form id="cart-form" class="composer-body">
-              <label class="field">
-                <span>Your name</span>
-                <input id="cart-name" type="text" required placeholder="Your name" autocomplete="name" />
-              </label>
-              <div class="field">
-                <span>What do you need?</span>
-                <div id="cart-items" class="linen-items"></div>
+            <div class="field">
+              <span>Floor / area <span class="optional">(optional)</span></span>
+              <div class="chip-row" id="area-presets">
+                <button type="button" class="quick-chip" data-area="Floor 1">Floor 1</button>
+                <button type="button" class="quick-chip" data-area="Floor 2">Floor 2</button>
+                <button type="button" class="quick-chip" data-area="Floor 3">Floor 3</button>
+                <button type="button" class="quick-chip" data-area="Lobby">Lobby</button>
               </div>
-              <label class="field">
-                <span>Note <span class="optional">(optional)</span></span>
-                <input id="cart-notes" type="text" placeholder="Any special note" />
-              </label>
-              <button type="submit" class="btn btn-cart btn-wide">Send request</button>
-            </form>
-          </details>
+              <input id="shift-area" type="text" placeholder="Or type a floor / area" />
+            </div>
 
-          <div id="cart-list" class="simple-list" aria-live="polite"></div>
+            <label class="field">
+              <span>Note <span class="optional">(optional)</span></span>
+              <div class="note-row">
+                <input id="shift-notes" type="text" placeholder="Bring cart keys" />
+                <button type="button" class="btn btn-soft btn-mic" id="voice-note" title="Speak a note">Mic</button>
+              </div>
+              <small class="field-hint" id="mic-hint">Tap Mic and say the note out loud.</small>
+            </label>
+
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary btn-wide" id="shift-submit">Save shift</button>
+              <button type="button" class="btn btn-ghost btn-wide" id="shift-cancel" hidden>Cancel edit</button>
+            </div>
+          </form>
+
+          <h2 class="list-heading">Recent shifts this week</h2>
+          <div id="manage-shifts" class="schedule-list manage-list" aria-live="polite"></div>
+
+          <h2 class="list-heading">Mark someone off</h2>
+          <form id="off-form" class="form-card" novalidate>
+            <p class="field-hint" style="margin: 0">
+              Tap only the days they are off (example: Mon and Tue). Other days stay on the schedule.
+            </p>
+            <label class="field">
+              <span>Who</span>
+              <select id="off-user" required>
+                <option value="">Choose person</option>
+              </select>
+            </label>
+            <div class="field">
+              <span>Days off <small class="optional" id="off-days-label">(tap one or more)</small></span>
+              <div id="off-day-chips" class="chip-row day-chips" aria-label="Choose off days"></div>
+              <label class="field date-fallback-wrap">
+                <span>Add another off date</span>
+                <input id="off-date" type="date" class="date-fallback" />
+              </label>
+            </div>
+            <label class="field">
+              <span>Reason <span class="optional">(optional)</span></span>
+              <input id="off-reason" type="text" placeholder="Vacation, sick, personal" />
+            </label>
+            <button type="submit" class="btn btn-primary btn-wide">Mark off</button>
+          </form>
+          <div id="off-list" class="off-list" aria-live="polite"></div>
         </section>
 
-        <!-- CHECKLIST -->
-        <section id="view-checklist" class="view" data-section="checklist" hidden>
-          <header class="page-head page-head-row">
-            <h1>Team checklist</h1>
-            <button type="button" class="btn btn-ghost btn-sm" id="clear-checklist-done">Clear done</button>
+        <section id="view-people" class="view" data-view="people" hidden>
+          <header class="page-head">
+            <h1>People</h1>
+            <p class="page-sub">Add staff and give each person a simple password</p>
           </header>
 
-          <details class="composer check-composer" id="check-composer">
-            <summary>
-              <span class="composer-icon check-ico" aria-hidden="true"></span>
-              Add item for team
-            </summary>
-            <form id="checklist-form" class="composer-body">
-              <label class="field">
-                <span>Manager name</span>
-                <input id="manager-name" type="text" required placeholder="Manager name" autocomplete="name" />
-              </label>
-              <label class="field">
-                <span>Checklist item</span>
-                <input id="checklist-text" type="text" required placeholder="e.g. Check linen closet stock" />
-              </label>
-              <button type="submit" class="btn btn-check btn-wide">Post for everyone</button>
-            </form>
-          </details>
+          <div id="password-help-box" class="guide-card guide-card-manager" hidden>
+            <strong>Needs a new password</strong>
+            <p>Tap <b>Give password</b>, choose a simple one (like 1234), then tell them.</p>
+            <div id="password-help-list" class="help-list"></div>
+          </div>
 
-          <div id="checklist-list" class="checklist" aria-live="polite"></div>
+          <form id="people-form" class="form-card" novalidate>
+            <div class="info-callout">
+              <strong>How passwords work</strong>
+              <p>Each person gets a short password (like <b>1234</b>). They tap their name, type that password, and see only their schedule.</p>
+            </div>
+            <label class="field">
+              <span>Name</span>
+              <input id="people-name" type="text" required placeholder="First name" autocomplete="off" />
+            </label>
+            <label class="field">
+              <span>Password for them</span>
+              <input
+                id="people-password"
+                type="text"
+                inputmode="numeric"
+                required
+                placeholder="Example: 1234"
+                autocomplete="off"
+              />
+              <small class="field-hint">Use at least 4 numbers or letters. Easy to remember is best.</small>
+            </label>
+            <label class="field">
+              <span>Role</span>
+              <select id="people-role">
+                <option value="staff">Staff — can see their own schedule</option>
+                <option value="manager">Manager — can make schedules</option>
+              </select>
+            </label>
+            <button type="submit" class="btn btn-primary btn-wide">Add person</button>
+          </form>
+
+          <div id="people-list" class="people-list" aria-live="polite"></div>
         </section>
       </main>
 
-      <nav class="tabbar tabbar-3" aria-label="Main menu">
-        <button type="button" class="tab is-active" data-nav="laundry" aria-label="Laundry">
-          <span class="tab-svg" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M4 7h16v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7z" />
-              <path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-              <circle cx="12" cy="14" r="3" />
-            </svg>
-          </span>
-          <span class="tab-label">Laundry</span>
-          <span class="badge" id="badge-laundry" hidden>0</span>
+      <nav class="tabbar" id="tabbar" aria-label="Main menu">
+        <button type="button" class="tab" data-nav="today">
+          <span class="tab-label">Today</span>
         </button>
-        <button type="button" class="tab" data-nav="cart" aria-label="Cart fill">
-          <span class="tab-svg" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M3 5h2l2.2 10.4a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.6L21 8H7" />
-              <circle cx="10" cy="20" r="1.4" />
-              <circle cx="17" cy="20" r="1.4" />
-            </svg>
-          </span>
-          <span class="tab-label">Cart</span>
-          <span class="badge badge-cart" id="badge-cart" hidden>0</span>
+        <button type="button" class="tab is-active" data-nav="mine">
+          <span class="tab-label">My days</span>
         </button>
-        <button type="button" class="tab" data-nav="checklist" aria-label="Checklist">
-          <span class="tab-svg" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M9 6h11M9 12h11M9 18h11" />
-              <path d="M4 6.5l1.2 1.2L7.2 5" />
-              <path d="M4 12.5l1.2 1.2L7.2 11" />
-              <path d="M4 18.5l1.2 1.2L7.2 17" />
-            </svg>
-          </span>
-          <span class="tab-label">Tasks</span>
-          <span class="badge badge-tasks" id="badge-checklist" hidden>0</span>
+        <button type="button" class="tab manager-only" data-nav="team" hidden>
+          <span class="tab-label">Team</span>
+        </button>
+        <button type="button" class="tab manager-only" data-nav="manage" hidden>
+          <span class="tab-label">Make schedule</span>
+        </button>
+        <button type="button" class="tab manager-only" data-nav="people" hidden>
+          <span class="tab-label">People</span>
         </button>
       </nav>
     </div>

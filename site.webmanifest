@@ -1,11 +1,11 @@
 {
-  "name": "LinenBoard",
-  "short_name": "LinenBoard",
-  "description": "Housekeeping linen requests for laundry",
+  "name": "ShiftBoard",
+  "short_name": "ShiftBoard",
+  "description": "Housekeeping staff schedules",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0F2744",
-  "theme_color": "#0F2744",
+  "background_color": "#16324F",
+  "theme_color": "#16324F",
   "icons": [
     {
       "src": "/favicon.svg",
