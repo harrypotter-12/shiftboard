@@ -8,6 +8,8 @@ Staff tap their name, enter a short password, and see their work days. Managers 
 
 **https://shiftboard.onrender.com**
 
+(Also still works: https://linenboard.onrender.com — same ShiftBoard app.)
+
 Everyone on any phone can use that same link. Your computer does not need to stay on.
 
 > Free Render tip: after idle time the site may take ~30–60 seconds to wake up the first time someone opens it.
