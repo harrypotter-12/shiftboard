@@ -6,7 +6,7 @@ Staff tap their name, enter a short password, and see their work days. Managers 
 
 ## Public team link
 
-**https://linenboard.onrender.com**
+**https://shiftboard.onrender.com**
 
 Everyone on any phone can use that same link. Your computer does not need to stay on.
 
@@ -37,7 +37,7 @@ Demo accounts on a fresh install:
 
 ## GitHub
 
-https://github.com/harrypotter-12/linenboard
+https://github.com/harrypotter-12/shiftboard
 
 ## Run locally
 
