@@ -6,9 +6,9 @@ Staff sign in with **name + password** and see their week. Managers add people a
 
 ## Live link
 
-**https://linenboard.onrender.com**
+**https://shiftboard-59eu.onrender.com**
 
-Render service name is **shiftboard**. The public link stays `linenboard.onrender.com` because `shiftboard.onrender.com` is already used by another app.
+> Exact `shiftboard.onrender.com` was already taken, so Render added a short code. Same app — just use this link.
 
 > Free Render tip: after idle time the site may take ~30–60 seconds to wake up the first time someone opens it.
 
