@@ -35,11 +35,13 @@
 html,
 body {
   margin: 0;
+  position: fixed;
+  inset: 0;
+  width: 100%;
   height: 100%;
-  height: 100svh;
-  max-width: 100%;
   overflow: hidden;
   overscroll-behavior: none;
+  touch-action: manipulation;
 }
 
 html {
@@ -57,6 +59,10 @@ body {
   line-height: 1.5;
   font-size: clamp(1rem, 0.35vw + 0.96rem, 1.125rem);
   -webkit-font-smoothing: antialiased;
+}
+
+img {
+  max-width: 100%;
 }
 
 button,
@@ -79,27 +85,31 @@ button {
 }
 
 .app-shell {
-  height: 100%;
+  position: absolute;
+  inset: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  overscroll-behavior: none;
 }
 
 /* Login */
 .login-gate {
-  position: relative;
-  height: 100%;
-  display: grid;
-  place-items: start center;
-  padding: max(0.85rem, env(safe-area-inset-top)) max(0.85rem, env(safe-area-inset-right)) max(1.1rem, env(safe-area-inset-bottom)) max(0.85rem, env(safe-area-inset-left));
-  overflow: auto;
-  overscroll-behavior: contain;
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding: max(0.7rem, env(safe-area-inset-top)) max(0.7rem, env(safe-area-inset-right)) max(0.7rem, env(safe-area-inset-bottom)) max(0.7rem, env(safe-area-inset-left));
+  overflow: hidden;
+  overscroll-behavior: none;
   background: linear-gradient(160deg, #102c45 0%, #184862 42%, #1f6a6a 100%);
 }
 
 .login-atmosphere {
   position: absolute;
   inset: 0;
+  overflow: hidden;
   background:
     radial-gradient(700px 360px at 15% 12%, rgba(44, 155, 127, 0.35), transparent 60%),
     radial-gradient(560px 320px at 90% 80%, rgba(244, 239, 230, 0.16), transparent 55%),
@@ -110,7 +120,7 @@ button {
 .login-atmosphere::after {
   content: "";
   position: absolute;
-  inset: auto -10% -20% -10%;
+  inset: auto 0 0 0;
   height: 45%;
   background: linear-gradient(180deg, transparent, rgba(8, 24, 40, 0.18));
 }
@@ -120,8 +130,15 @@ button {
   z-index: 1;
   width: min(460px, 100%);
   min-width: 0;
+  margin: 0 auto;
+  flex: 1 1 auto;
+  min-height: 0;
   display: grid;
-  gap: 1.1rem;
+  align-content: start;
+  gap: 0.75rem;
+  overflow: auto;
+  overscroll-behavior: none;
+  overflow-x: hidden;
 }
 
 .login-hero {
@@ -209,10 +226,9 @@ button {
   display: grid;
   gap: 0.65rem;
   margin-top: 0.75rem;
-  max-height: min(48svh, 380px);
+  max-height: min(42svh, 340px);
   overflow: auto;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: none;
   padding-right: 0.15rem;
 }
 
@@ -248,7 +264,7 @@ button {
 
 .name-search-box input {
   min-height: 3.2rem;
-  font-size: 1.15rem;
+  font-size: 16px;
   font-weight: 700;
   border: none !important;
   box-shadow: none !important;
@@ -283,7 +299,6 @@ button {
   font-weight: 800;
   font-size: 1.2rem;
   color: var(--navy);
-  transition: border-color 140ms ease, transform 140ms ease, background 140ms ease, box-shadow 140ms ease;
 }
 
 .name-chip:hover,
@@ -295,7 +310,7 @@ button {
 }
 
 .name-chip:active {
-  transform: scale(0.985);
+  background: var(--sea-soft);
 }
 
 .name-chip .avatar {
@@ -778,8 +793,8 @@ main {
   min-width: 0;
   margin: 0 auto;
   overflow: auto;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: none;
+  overflow-x: hidden;
   padding: 1.15rem max(1rem, env(safe-area-inset-right)) calc(var(--tabbar-h) + 1.5rem + env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
 }
 
@@ -1052,7 +1067,6 @@ main {
   background: var(--danger-soft);
   color: var(--danger);
   border-color: #efc7c3;
-  animation: pulse 1s ease infinite;
 }
 
 @keyframes pulse {
@@ -1107,6 +1121,7 @@ main {
 .field textarea {
   width: 100%;
   min-width: 0;
+  font-size: 16px;
 }
 
 .form-card {
@@ -1138,11 +1153,10 @@ main {
   justify-content: center;
   touch-action: manipulation;
   max-width: 100%;
-  transition: transform 120ms ease, background 120ms ease, color 120ms ease, box-shadow 120ms ease;
 }
 
 .btn:active {
-  transform: scale(0.98);
+  filter: brightness(0.97);
 }
 
 .btn-wide {
@@ -1223,7 +1237,6 @@ main {
   box-shadow: var(--shadow);
   display: grid;
   gap: 0.28rem;
-  animation: rise 360ms ease both;
 }
 
 .shift-card.is-today {
@@ -1617,7 +1630,9 @@ main {
 .tab-label {
   display: block;
   line-height: 1.15;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .tab.is-active {
@@ -1660,6 +1675,21 @@ main {
   :root {
     --tap: 3rem;
     --tabbar-h: 4.55rem;
+  }
+
+  .login-hero {
+    gap: 0.15rem;
+    padding: 0;
+  }
+
+  .brand-mark-lg {
+    width: 3.1rem;
+    height: 3.1rem;
+  }
+
+  .login-panel {
+    padding: 1rem 0.9rem 1.05rem;
+    border-radius: 22px;
   }
 
   body:has(.tabbar.is-manager) {
