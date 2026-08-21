@@ -21,6 +21,19 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
+    <div id="lang-sheet" class="lang-sheet" hidden>
+      <button type="button" class="lang-sheet-backdrop" id="lang-backdrop" aria-label="Close"></button>
+      <div class="lang-sheet-card" role="dialog" aria-labelledby="lang-title">
+        <h2 id="lang-title" data-i18n="lang.title">Choose a language</h2>
+        <div id="lang-choices" class="lang-choices"></div>
+        <button type="button" class="btn btn-ghost btn-wide" id="lang-close" data-i18n="lang.close">Close</button>
+      </div>
+    </div>
+
+    <button type="button" class="lang-fab" id="lang-fab" data-open-lang data-i18n-title="lang.button" title="Other languages" aria-label="Other languages">
+      A文
+    </button>
+
     <div id="login-gate" class="login-gate">
       <div class="login-atmosphere" aria-hidden="true"></div>
       <div class="login-shell">
@@ -34,36 +47,34 @@
               <path d="M41 42.2l2 2 4-4.2" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
           </span>
-          <p class="login-kicker">Housekeeping</p>
+          <p class="login-kicker" data-i18n="login.kicker">Housekeeping</p>
           <h1 class="login-brand-title">ShiftBoard</h1>
-          <p class="login-tagline">Tap your name to see your work days.</p>
+          <p class="login-tagline" data-i18n="login.tagline">Tap your name to see your work days.</p>
         </header>
 
         <div class="login-panel">
           <div id="login-step-name" class="login-step is-active">
-            <div class="step-label"><span>1</span> Tap your name</div>
-            <h2>Who are you?</h2>
-            <p class="login-help">Find your name and tap it.</p>
+            <div class="step-label"><span>1</span> <span data-i18n="login.step1">Tap your name</span></div>
+            <h2 data-i18n="login.who">Who are you?</h2>
+            <p class="login-help" data-i18n="login.help">Find your name and tap it.</p>
             <div id="name-picker" class="name-picker" aria-label="Staff names"></div>
-            <p id="name-picker-empty" class="picker-empty" hidden>Loading names…</p>
-            <div class="login-divider"><span>New?</span></div>
-            <button type="button" class="btn btn-soft btn-wide" id="go-signup">I'm new — make my name</button>
+            <p id="name-picker-empty" class="picker-empty" hidden data-i18n="login.loading">Loading names…</p>
           </div>
 
           <div id="login-step-pass" class="login-step" hidden>
-            <button type="button" class="back-link" id="login-back">← Back</button>
-            <div class="step-label"><span>2</span> Your password</div>
+            <button type="button" class="back-link" id="login-back" data-i18n="login.back">← Back</button>
+            <div class="step-label"><span>2</span> <span data-i18n="login.step2">Your password</span></div>
             <div class="selected-person" id="selected-person">
               <span class="avatar" id="selected-avatar">?</span>
               <div>
                 <strong id="selected-name">Name</strong>
-                <small>Type your short password</small>
+                <small data-i18n="login.typePass">Type your short password</small>
               </div>
             </div>
             <form id="login-form" class="login-form" novalidate>
               <input id="login-name" type="hidden" value="" />
               <label class="field">
-                <span>Password</span>
+                <span data-i18n="login.password">Password</span>
                 <div class="password-box">
                   <input
                     id="login-password"
@@ -73,15 +84,15 @@
                     placeholder="••••"
                     required
                   />
-                  <button type="button" class="show-pass" id="toggle-password" aria-pressed="false">Show</button>
+                  <button type="button" class="show-pass" id="toggle-password" aria-pressed="false" data-i18n="login.show">Show</button>
                 </div>
-                <small class="field-hint">Usually 4 numbers, like 1234.</small>
+                <small class="field-hint" data-i18n="login.passHint">Usually 4 numbers, like 1234.</small>
               </label>
               <p id="login-error" class="form-error" hidden></p>
-              <button type="submit" class="btn btn-primary btn-wide" id="login-submit">
+              <button type="submit" class="btn btn-primary btn-wide" id="login-submit" data-i18n="login.seeDays">
                 See my days
               </button>
-              <button type="button" class="btn btn-ghost btn-wide" id="forgot-password">
+              <button type="button" class="btn btn-ghost btn-wide" id="forgot-password" data-i18n="login.forgot">
                 Forgot password?
               </button>
               <p id="forgot-message" class="field-hint forgot-ok" hidden></p>
@@ -89,17 +100,17 @@
           </div>
 
           <div id="login-step-signup" class="login-step" hidden>
-            <button type="button" class="back-link" id="signup-back">← Back to sign in</button>
-            <div class="step-label"><span>New</span> Add your name</div>
-            <h2>Make your name</h2>
-            <p class="login-help">Just your name and a short password. That’s it.</p>
+            <button type="button" class="back-link" id="signup-back" data-i18n="login.signupBack">← Back to sign in</button>
+            <div class="step-label"><span data-i18n="login.new">New</span> <span data-i18n="login.signupStep">Add your name</span></div>
+            <h2 data-i18n="login.makeName">Make your name</h2>
+            <p class="login-help" data-i18n="login.signupHelp">Just your name and a short password. That’s it.</p>
             <form id="signup-form" class="login-form" novalidate>
               <label class="field">
-                <span>Your first name</span>
-                <input id="signup-name" type="text" autocomplete="name" placeholder="Example: Linda" required />
+                <span data-i18n="login.firstName">Your first name</span>
+                <input id="signup-name" type="text" autocomplete="name" data-i18n-placeholder="placeholder.name" placeholder="Example: Linda" required />
               </label>
               <label class="field">
-                <span>Pick a password</span>
+                <span data-i18n="login.pickPass">Pick a password</span>
                 <div class="password-box">
                   <input
                     id="signup-password"
@@ -109,12 +120,12 @@
                     placeholder="••••"
                     required
                   />
-                  <button type="button" class="show-pass" id="toggle-signup-password" aria-pressed="false">Show</button>
+                  <button type="button" class="show-pass" id="toggle-signup-password" aria-pressed="false" data-i18n="login.show">Show</button>
                 </div>
-                <small class="field-hint">4 numbers is fine — like 1234.</small>
+                <small class="field-hint" data-i18n="login.passHint2">4 numbers is fine — like 1234.</small>
               </label>
               <label class="field">
-                <span>Type it again</span>
+                <span data-i18n="login.again">Type it again</span>
                 <input
                   id="signup-confirm"
                   type="password"
@@ -126,7 +137,7 @@
               </label>
               <input type="hidden" name="signup-role" value="staff" />
               <p id="signup-error" class="form-error" hidden></p>
-              <button type="submit" class="btn btn-primary btn-wide" id="signup-submit">Save and see my days</button>
+              <button type="submit" class="btn btn-primary btn-wide" id="signup-submit" data-i18n="login.save">Save and see my days</button>
             </form>
           </div>
         </div>
@@ -150,7 +161,9 @@
             <small id="hello-label">Your schedule</small>
           </div>
         </div>
-        <button type="button" class="btn btn-ghost btn-compact" id="sign-out-btn">Sign out</button>
+        <div class="topbar-actions">
+          <button type="button" class="btn btn-ghost btn-compact" id="sign-out-btn" data-i18n="signout">Sign out</button>
+        </div>
       </header>
 
       <main>
@@ -159,13 +172,15 @@
         <section id="view-today" class="view" data-view="today" hidden>
           <header class="page-head page-head-row">
             <div>
-              <h1>Working today</h1>
+              <h1 data-i18n="today.title">Working today</h1>
               <p id="today-date-label" class="page-sub">Today</p>
             </div>
             <div class="head-actions manager-only" hidden>
-              <button type="button" class="btn btn-soft btn-compact" id="share-today">Share</button>
+              <button type="button" class="btn btn-soft btn-compact" id="share-today" data-i18n="share">Share</button>
             </div>
           </header>
+          <div id="coverage-strip" class="coverage-strip" hidden></div>
+          <div id="working-with" class="working-with staff-only" hidden></div>
           <div id="today-team-note" class="team-note" hidden></div>
           <div id="today-board" class="today-board" aria-live="polite"></div>
           <div id="today-off" class="today-off" aria-live="polite"></div>
@@ -178,66 +193,85 @@
               <p id="schedule-range" class="page-sub">Loading…</p>
             </div>
             <div class="head-actions">
-              <button type="button" class="btn btn-soft btn-compact manager-only" id="share-mine" hidden>Share</button>
-              <button type="button" class="btn btn-voice" id="hear-schedule" title="Hear schedule out loud">
+              <button type="button" class="btn btn-soft btn-compact manager-only" id="share-mine" hidden data-i18n="share">Share</button>
+              <button type="button" class="btn btn-voice" id="hear-schedule" title="Hear schedule out loud" data-i18n="hear">
                 Read out loud
               </button>
             </div>
           </header>
 
           <div class="view-switch manager-only" role="tablist" aria-label="Schedule view" hidden>
-            <button type="button" class="view-switch-btn is-active" data-mode="day">Day</button>
-            <button type="button" class="view-switch-btn" data-mode="week">Week</button>
-            <button type="button" class="view-switch-btn" data-mode="month">Month</button>
+            <button type="button" class="view-switch-btn is-active" data-mode="day" data-i18n="day">Day</button>
+            <button type="button" class="view-switch-btn" data-mode="week" data-i18n="week">Week</button>
+            <button type="button" class="view-switch-btn" data-mode="month" data-i18n="month">Month</button>
           </div>
-          <div class="staff-week-hint staff-only">This week — times for each day</div>
+          <div class="staff-week-hint staff-only" data-i18n="mine.hint">This week — times for each day</div>
+
+          <div id="week-summary" class="week-summary" hidden></div>
+          <div id="next-shift-card" class="next-shift-card" hidden></div>
+          <div id="open-shifts-board" class="open-board" hidden></div>
 
           <div id="staff-guide" class="guide-card" hidden>
-            <strong>No days yet</strong>
-            <p>You’re signed in. Ask your manager to put you on the schedule.</p>
+            <strong data-i18n="guide.none">No days yet</strong>
+            <p data-i18n="guide.staff">You’re signed in. Ask your manager to put you on the schedule.</p>
           </div>
           <div id="manager-guide" class="guide-card guide-card-manager" hidden>
-            <strong>Make the schedule so people can see their days</strong>
+            <strong data-i18n="guide.manager">Make the schedule so people can see their days</strong>
             <ol>
-              <li>Ask your team to create accounts (or add them in People).</li>
-              <li>Open <b>Make schedule</b> and add each person’s shifts.</li>
-              <li>They sign in and see only their own week.</li>
+              <li data-i18n="guide.li1">Ask your team to create accounts (or add them in People).</li>
+              <li data-i18n="guide.li2">Open Make schedule and add each person’s shifts.</li>
+              <li data-i18n="guide.li3">They sign in and see only their own week.</li>
             </ol>
-            <button type="button" class="btn btn-primary btn-wide" id="guide-make-schedule">Make schedule now</button>
+            <button type="button" class="btn btn-primary btn-wide" id="guide-make-schedule" data-i18n="guide.now">Make schedule now</button>
           </div>
 
           <div class="week-nav">
-            <button type="button" class="btn btn-soft" id="sched-prev" aria-label="Previous">← Last week</button>
-            <button type="button" class="btn btn-soft" id="sched-today">This week</button>
-            <button type="button" class="btn btn-soft" id="sched-next" aria-label="Next">Next week →</button>
+            <button type="button" class="btn btn-soft" id="sched-prev" aria-label="Previous" data-i18n="nav.lastWeek">← Last week</button>
+            <button type="button" class="btn btn-soft" id="sched-today" data-i18n="nav.thisWeek">This week</button>
+            <button type="button" class="btn btn-soft" id="sched-next" aria-label="Next" data-i18n="nav.nextWeek">Next week →</button>
           </div>
 
           <div id="month-calendar" class="month-calendar" hidden></div>
           <div id="my-schedule" class="schedule-list" aria-live="polite"></div>
+
+          <form id="ask-off-form" class="form-card staff-only" hidden>
+            <h2 class="card-title" data-i18n="askOff.title">Need a day off?</h2>
+            <p class="field-hint" style="margin: 0" data-i18n="askOff.help">Ask your manager. They will say yes or no.</p>
+            <label class="field">
+              <span data-i18n="askOff.which">Which day</span>
+              <input id="ask-off-date" type="date" required />
+            </label>
+            <label class="field">
+              <span><span data-i18n="askOff.why">Why</span> <span class="optional" data-i18n="optional">(optional)</span></span>
+              <input id="ask-off-reason" type="text" data-i18n-placeholder="placeholder.reason" placeholder="Vacation, sick, appointment" />
+            </label>
+            <button type="submit" class="btn btn-primary btn-wide" data-i18n="askOff.submit">Ask for this day off</button>
+            <div id="my-off-requests" class="request-list"></div>
+          </form>
         </section>
 
         <section id="view-team" class="view" data-view="team" hidden>
           <header class="page-head page-head-row">
             <div>
-              <h1>Team schedule</h1>
+              <h1 data-i18n="team.title">Team schedule</h1>
               <p id="team-range" class="page-sub">Everyone’s shifts</p>
             </div>
             <div class="head-actions">
-              <button type="button" class="btn btn-soft btn-compact" id="export-excel">Save Excel</button>
-              <button type="button" class="btn btn-soft btn-compact" id="export-pdf">Save PDF</button>
-              <button type="button" class="btn btn-soft btn-compact" id="share-team">Share</button>
-              <button type="button" class="btn btn-voice" id="hear-team" title="Hear team schedule">Hear</button>
+              <button type="button" class="btn btn-soft btn-compact" id="export-excel" data-i18n="excel">Save Excel</button>
+              <button type="button" class="btn btn-soft btn-compact" id="export-pdf" data-i18n="pdf">Save PDF</button>
+              <button type="button" class="btn btn-soft btn-compact" id="share-team" data-i18n="share">Share</button>
+              <button type="button" class="btn btn-voice" id="hear-team" title="Hear team schedule" data-i18n="hear.short">Hear</button>
             </div>
           </header>
           <div class="view-switch" role="tablist" aria-label="Team schedule view">
-            <button type="button" class="view-switch-btn is-active" data-team-mode="day">Day</button>
-            <button type="button" class="view-switch-btn" data-team-mode="week">Week</button>
-            <button type="button" class="view-switch-btn" data-team-mode="month">Month</button>
+            <button type="button" class="view-switch-btn is-active" data-team-mode="day" data-i18n="day">Day</button>
+            <button type="button" class="view-switch-btn" data-team-mode="week" data-i18n="week">Week</button>
+            <button type="button" class="view-switch-btn" data-team-mode="month" data-i18n="month">Month</button>
           </div>
           <div class="week-nav">
-            <button type="button" class="btn btn-soft" id="team-prev" aria-label="Previous">← Back</button>
-            <button type="button" class="btn btn-soft" id="team-today">Today</button>
-            <button type="button" class="btn btn-soft" id="team-next" aria-label="Next">Next →</button>
+            <button type="button" class="btn btn-soft" id="team-prev" aria-label="Previous" data-i18n="nav.back">← Back</button>
+            <button type="button" class="btn btn-soft" id="team-today" data-i18n="today.today">Today</button>
+            <button type="button" class="btn btn-soft" id="team-next" aria-label="Next" data-i18n="nav.next">Next →</button>
           </div>
           <div id="team-month-calendar" class="month-calendar" hidden></div>
           <div id="team-schedule" class="schedule-list" aria-live="polite"></div>
@@ -245,68 +279,124 @@
 
         <section id="view-manage" class="view" data-view="manage" hidden>
           <header class="page-head">
-            <h1>Make schedule</h1>
-            <p class="page-sub">Tap people, tap days, choose a time</p>
+            <h1 data-i18n="manage.title">Make schedule</h1>
+            <p class="page-sub" data-i18n="manage.sub">Ask AI, or tap people and days below</p>
           </header>
 
+          <div class="ai-chat form-card">
+            <strong class="ai-heading" data-i18n="ai.title">Ask AI</strong>
+            <div id="ai-thread" class="ai-thread" aria-live="polite"></div>
+            <div class="ai-suggestions" id="ai-suggestions">
+              <button type="button" class="quick-chip" data-ai-prompt="Who is working tomorrow?">Who works tomorrow?</button>
+              <button type="button" class="quick-chip" data-ai-prompt="Rose this month, two days off">Rose this month</button>
+              <button type="button" class="quick-chip" data-ai-prompt="Copy last week">Copy last week</button>
+            </div>
+            <form id="ai-form" class="ai-compose" novalidate>
+              <textarea
+                id="ai-input"
+                rows="1"
+                data-i18n-placeholder="ai.placeholder"
+                placeholder="Rose this month, two days off"
+              ></textarea>
+              <button type="submit" class="btn btn-primary" id="ai-send" data-i18n="ai.send">Send</button>
+            </form>
+          </div>
+
           <div class="info-callout manage-tip">
-            <strong>Quick tip</strong>
-            <p>Tap <b>more than one person</b> and <b>more than one day</b>. Same times are saved for everyone you pick.</p>
+            <strong data-i18n="manage.tip">Quick tip</strong>
+            <p data-i18n-html="manage.tipHtml">Tap <b>more than one person</b> and <b>more than one day</b>. Same times are saved for everyone you pick.</p>
           </div>
 
           <div class="manage-toolbar">
-            <button type="button" class="btn btn-soft btn-wide" id="copy-last-week">
+            <button type="button" class="btn btn-soft btn-wide" id="copy-last-week" data-i18n="copyWeek">
               Copy last week → this week
             </button>
           </div>
 
-          <h2 class="list-heading">Note for everyone</h2>
+          <div id="pending-requests" class="pending-box" hidden></div>
+
+          <h2 class="list-heading" data-i18n="open.heading">Need extra people</h2>
+          <form id="open-shift-form" class="form-card" novalidate>
+            <p class="field-hint" style="margin: 0" data-i18n="open.help">
+              Post a shift anyone can take — sick cover, extra rooms, a busy day.
+            </p>
+            <label class="field">
+              <span data-i18n="open.day">Day</span>
+              <input id="open-date" type="date" required />
+            </label>
+            <div class="field-grid">
+              <label class="field">
+                <span data-i18n="start">Start</span>
+                <input id="open-start" type="time" required value="08:00" />
+              </label>
+              <label class="field">
+                <span data-i18n="end">End</span>
+                <input id="open-end" type="time" required value="16:00" />
+              </label>
+            </div>
+            <label class="field">
+              <span data-i18n="open.howMany">How many people</span>
+              <input id="open-needed" type="number" min="1" max="8" value="1" />
+            </label>
+            <label class="field">
+              <span><span data-i18n="area">Floor / area</span> <span class="optional" data-i18n="optional">(optional)</span></span>
+              <input id="open-area" type="text" placeholder="Floor 2" />
+            </label>
+            <label class="field">
+              <span><span data-i18n="note">Note</span> <span class="optional" data-i18n="optional">(optional)</span></span>
+              <input id="open-notes" type="text" placeholder="Cover for Linda" />
+            </label>
+            <button type="submit" class="btn btn-primary btn-wide" data-i18n="open.post">Post extra shift</button>
+          </form>
+          <div id="open-shift-list" class="open-board"></div>
+
+          <h2 class="list-heading" data-i18n="notes.heading">Note for everyone</h2>
           <form id="note-form" class="form-card" novalidate>
-            <p class="field-hint" style="margin: 0">
+            <p class="field-hint" style="margin: 0" data-i18n="notes.help">
               Everyone sees this note on that day (example: meeting at 2, bring keys).
             </p>
             <label class="field">
-              <span>Day</span>
+              <span data-i18n="open.day">Day</span>
               <input id="note-date" type="date" required />
             </label>
             <label class="field">
-              <span>Note for the team</span>
+              <span data-i18n="notes.team">Note for the team</span>
               <input id="note-text" type="text" required placeholder="Staff meeting at 2pm" />
             </label>
-            <button type="submit" class="btn btn-primary btn-wide">Save team note</button>
+            <button type="submit" class="btn btn-primary btn-wide" data-i18n="notes.save">Save team note</button>
           </form>
           <div id="note-list" class="note-list" aria-live="polite"></div>
 
-          <h2 class="list-heading">Swap shifts</h2>
+          <h2 class="list-heading" data-i18n="swap.heading">Swap shifts</h2>
           <form id="swap-form" class="form-card" novalidate>
-            <p class="field-hint" style="margin: 0">
+            <p class="field-hint" style="margin: 0" data-i18n="swap.help">
               Trade days between two people. Person A’s shifts move to Person B’s day, and the other way around.
             </p>
             <div class="field-grid">
               <label class="field">
-                <span>Person A</span>
+                <span data-i18n="swap.a">Person A</span>
                 <select id="swap-user-a" required>
-                  <option value="">Choose</option>
+                  <option value="" data-i18n="choose">Choose</option>
                 </select>
               </label>
               <label class="field">
-                <span>Person A’s day</span>
+                <span data-i18n="swap.aDay">Person A’s day</span>
                 <input id="swap-day-a" type="date" required />
               </label>
             </div>
             <div class="field-grid">
               <label class="field">
-                <span>Person B</span>
+                <span data-i18n="swap.b">Person B</span>
                 <select id="swap-user-b" required>
-                  <option value="">Choose</option>
+                  <option value="" data-i18n="choose">Choose</option>
                 </select>
               </label>
               <label class="field">
-                <span>Person B’s day</span>
+                <span data-i18n="swap.bDay">Person B’s day</span>
                 <input id="swap-day-b" type="date" required />
               </label>
             </div>
-            <button type="submit" class="btn btn-primary btn-wide">Swap their shifts</button>
+            <button type="submit" class="btn btn-primary btn-wide" data-i18n="swap.submit">Swap their shifts</button>
           </form>
 
           <form id="shift-form" class="form-card" novalidate>
@@ -314,148 +404,140 @@
             <input type="hidden" id="shift-user" value="" />
 
             <div class="field">
-              <span>1. Who <small class="optional" id="people-selected-label">(tap one or more)</small></span>
+              <span><span data-i18n="who">1. Who</span> <small class="optional" id="people-selected-label" data-i18n="tapMore">(tap one or more)</small></span>
               <div class="day-chip-actions">
-                <button type="button" class="btn btn-soft btn-mini" id="people-all">Everyone</button>
-                <button type="button" class="btn btn-soft btn-mini" id="people-clear">Clear people</button>
+                <button type="button" class="btn btn-soft btn-mini" id="people-all" data-i18n="everyone">Everyone</button>
+                <button type="button" class="btn btn-soft btn-mini" id="people-clear" data-i18n="clearPeople">Clear people</button>
               </div>
               <div id="person-chips" class="chip-row" aria-label="Choose people"></div>
             </div>
 
             <div class="field">
-              <span>2. Days <small class="optional" id="days-selected-label">(tap more than one)</small></span>
+              <span><span data-i18n="days">2. Days</span> <small class="optional" id="days-selected-label" data-i18n="tapDays">(tap more than one)</small></span>
               <div class="day-chip-actions">
-                <button type="button" class="btn btn-soft btn-mini" id="days-weekdays">Mon–Fri</button>
-                <button type="button" class="btn btn-soft btn-mini" id="days-clear">Clear days</button>
+                <button type="button" class="btn btn-soft btn-mini" id="days-weekdays" data-i18n="weekdays">Mon–Fri</button>
+                <button type="button" class="btn btn-soft btn-mini" id="days-clear" data-i18n="clearDays">Clear days</button>
               </div>
               <div id="day-chips" class="chip-row day-chips" aria-label="Choose days"></div>
               <label class="field date-fallback-wrap">
-                <span>Add another date</span>
+                <span data-i18n="addDate">Add another date</span>
                 <input id="shift-date" type="date" class="date-fallback" />
               </label>
             </div>
 
             <div class="field">
-              <span>3. Time</span>
-              <div class="chip-row" id="time-presets">
-                <button type="button" class="quick-chip" data-start="08:00" data-end="16:00">8am – 4pm</button>
-                <button type="button" class="quick-chip" data-start="09:00" data-end="17:00">9am – 5pm</button>
-                <button type="button" class="quick-chip" data-start="09:30" data-end="17:00">9:30 – 5pm</button>
-                <button type="button" class="quick-chip" data-start="08:30" data-end="17:00">8:30 – 5pm</button>
-                <button type="button" class="quick-chip" data-start="07:30" data-end="16:00">7:30 – 4pm</button>
-                <button type="button" class="quick-chip" data-start="07:00" data-end="15:00">7am – 3pm</button>
-                <button type="button" class="quick-chip" data-start="14:00" data-end="22:00">2pm – 10pm</button>
-              </div>
+              <span data-i18n="time">3. Time</span>
               <div class="field-grid">
                 <label class="field">
-                  <span>Start</span>
+                  <span data-i18n="start">Start</span>
                   <input id="shift-start" type="time" required value="08:00" />
                 </label>
                 <label class="field">
-                  <span>End</span>
+                  <span data-i18n="end">End</span>
                   <input id="shift-end" type="time" required value="16:00" />
                 </label>
               </div>
             </div>
 
             <div class="field">
-              <span>Floor / area <span class="optional">(optional)</span></span>
+              <span><span data-i18n="area">Floor / area</span> <span class="optional" data-i18n="optional">(optional)</span></span>
               <div class="chip-row" id="area-presets">
-                <button type="button" class="quick-chip" data-area="Floor 1">Floor 1</button>
-                <button type="button" class="quick-chip" data-area="Floor 2">Floor 2</button>
-                <button type="button" class="quick-chip" data-area="Floor 3">Floor 3</button>
-                <button type="button" class="quick-chip" data-area="Lobby">Lobby</button>
+                <button type="button" class="quick-chip" data-area="Floor 1" data-i18n="floor1">Floor 1</button>
+                <button type="button" class="quick-chip" data-area="Floor 2" data-i18n="floor2">Floor 2</button>
+                <button type="button" class="quick-chip" data-area="Floor 3" data-i18n="floor3">Floor 3</button>
+                <button type="button" class="quick-chip" data-area="Lobby" data-i18n="lobby">Lobby</button>
               </div>
-              <input id="shift-area" type="text" placeholder="Or type a floor / area" />
+              <input id="shift-area" type="text" data-i18n-placeholder="placeholder.areaType" placeholder="Or type a floor / area" />
             </div>
 
             <label class="field">
-              <span>Note <span class="optional">(optional)</span></span>
+              <span><span data-i18n="note">Note</span> <span class="optional" data-i18n="optional">(optional)</span></span>
               <div class="note-row">
-                <input id="shift-notes" type="text" placeholder="Bring cart keys" />
-                <button type="button" class="btn btn-soft btn-mic" id="voice-note" title="Speak a note">Mic</button>
+                <input id="shift-notes" type="text" data-i18n-placeholder="placeholder.keys" placeholder="Bring cart keys" />
+                <button type="button" class="btn btn-soft btn-mic" id="voice-note" title="Speak a note" data-i18n="mic">Mic</button>
               </div>
-              <small class="field-hint" id="mic-hint">Tap Mic and say the note out loud.</small>
+              <small class="field-hint" id="mic-hint" data-i18n="mic.hint">Tap Mic and say the note out loud.</small>
             </label>
 
             <div class="form-actions">
-              <button type="submit" class="btn btn-primary btn-wide" id="shift-submit">Save shift</button>
-              <button type="button" class="btn btn-ghost btn-wide" id="shift-cancel" hidden>Cancel edit</button>
+              <button type="submit" class="btn btn-primary btn-wide" id="shift-submit" data-i18n="saveShift">Save shift</button>
+              <button type="button" class="btn btn-ghost btn-wide" id="shift-cancel" hidden data-i18n="cancelEdit">Cancel edit</button>
             </div>
           </form>
 
-          <h2 class="list-heading">Recent shifts this week</h2>
+          <h2 class="list-heading" data-i18n="recent">Recent shifts this week</h2>
           <div id="manage-shifts" class="schedule-list manage-list" aria-live="polite"></div>
 
-          <h2 class="list-heading">Mark someone off</h2>
+          <h2 class="list-heading" data-i18n="off.heading">Mark someone off</h2>
           <form id="off-form" class="form-card" novalidate>
-            <p class="field-hint" style="margin: 0">
+            <p class="field-hint" style="margin: 0" data-i18n="off.help">
               Tap only the days they are off (example: Mon and Tue). Other days stay on the schedule.
             </p>
             <label class="field">
-              <span>Who</span>
+              <span data-i18n="off.who">Who</span>
               <select id="off-user" required>
-                <option value="">Choose person</option>
+                <option value="" data-i18n="off.choose">Choose person</option>
               </select>
             </label>
             <div class="field">
-              <span>Days off <small class="optional" id="off-days-label">(tap one or more)</small></span>
+              <span><span data-i18n="off.days">Days off</span> <small class="optional" id="off-days-label" data-i18n="tapMore">(tap one or more)</small></span>
               <div id="off-day-chips" class="chip-row day-chips" aria-label="Choose off days"></div>
               <label class="field date-fallback-wrap">
-                <span>Add another off date</span>
+                <span data-i18n="off.add">Add another off date</span>
                 <input id="off-date" type="date" class="date-fallback" />
               </label>
             </div>
             <label class="field">
-              <span>Reason <span class="optional">(optional)</span></span>
-              <input id="off-reason" type="text" placeholder="Vacation, sick, personal" />
+              <span><span data-i18n="reason">Reason</span> <span class="optional" data-i18n="optional">(optional)</span></span>
+              <input id="off-reason" type="text" data-i18n-placeholder="placeholder.off" placeholder="Vacation, sick, personal" />
             </label>
-            <button type="submit" class="btn btn-primary btn-wide">Mark off</button>
+            <button type="submit" class="btn btn-primary btn-wide" data-i18n="off.mark">Mark off</button>
           </form>
           <div id="off-list" class="off-list" aria-live="polite"></div>
         </section>
 
         <section id="view-people" class="view" data-view="people" hidden>
           <header class="page-head">
-            <h1>People</h1>
-            <p class="page-sub">Add staff and give each person a simple password</p>
+            <h1 data-i18n="people.title">People</h1>
+            <p class="page-sub" data-i18n="people.sub">Add staff and give each person a simple password</p>
           </header>
 
           <div id="password-help-box" class="guide-card guide-card-manager" hidden>
-            <strong>Needs a new password</strong>
-            <p>Tap <b>Give password</b>, choose a simple one (like 1234), then tell them.</p>
+            <strong data-i18n="people.needPass">Needs a new password</strong>
+            <p data-i18n-html="people.needPassHtml">Tap <b>Give password</b>, choose a simple one (like 1234), then tell them.</p>
             <div id="password-help-list" class="help-list"></div>
           </div>
 
           <form id="people-form" class="form-card" novalidate>
             <div class="info-callout">
-              <strong>How passwords work</strong>
-              <p>Each person gets a short password (like <b>1234</b>). They tap their name, type that password, and see only their schedule.</p>
+              <strong data-i18n="people.how">How passwords work</strong>
+              <p data-i18n-html="people.howHtml">Each person gets a short password (like <b>1234</b>). They tap their name, type that password, and see only their schedule.</p>
             </div>
             <label class="field">
-              <span>Name</span>
-              <input id="people-name" type="text" required placeholder="First name" autocomplete="off" />
+              <span data-i18n="people.name">Name</span>
+              <input id="people-name" type="text" required data-i18n-placeholder="placeholder.first" placeholder="First name" autocomplete="off" />
             </label>
             <label class="field">
-              <span>Password for them</span>
+              <span data-i18n="people.pass">Password for them</span>
               <input
                 id="people-password"
                 type="text"
                 inputmode="numeric"
                 required
+                data-i18n-placeholder="placeholder.1234"
                 placeholder="Example: 1234"
                 autocomplete="off"
               />
-              <small class="field-hint">Use at least 4 numbers or letters. Easy to remember is best.</small>
+              <small class="field-hint" data-i18n="people.passHint">Use at least 4 numbers or letters. Easy to remember is best.</small>
             </label>
             <label class="field">
-              <span>Role</span>
+              <span data-i18n="people.role">Role</span>
               <select id="people-role">
-                <option value="staff">Staff — can see their own schedule</option>
-                <option value="manager">Manager — can make schedules</option>
+                <option value="staff" data-i18n="people.staff">Staff — can see their own schedule</option>
+                <option value="manager" data-i18n="people.manager">Manager — can make the schedule</option>
               </select>
             </label>
-            <button type="submit" class="btn btn-primary btn-wide">Add person</button>
+            <button type="submit" class="btn btn-primary btn-wide" data-i18n="people.add">Add person</button>
           </form>
 
           <div id="people-list" class="people-list" aria-live="polite"></div>
@@ -464,24 +546,26 @@
 
       <nav class="tabbar" id="tabbar" aria-label="Main menu">
         <button type="button" class="tab" data-nav="today">
-          <span class="tab-label">Today</span>
+          <span class="tab-label" data-i18n="tab.today">Today</span>
         </button>
         <button type="button" class="tab is-active" data-nav="mine">
-          <span class="tab-label">My days</span>
+          <span class="tab-label" data-i18n="tab.mine">My days</span>
         </button>
         <button type="button" class="tab manager-only" data-nav="team" hidden>
-          <span class="tab-label">Team</span>
+          <span class="tab-label" data-i18n="tab.team">Team</span>
         </button>
         <button type="button" class="tab manager-only" data-nav="manage" hidden>
-          <span class="tab-label">Make schedule</span>
+          <span class="tab-label" data-i18n="tab.manage">Make schedule</span>
+          <span id="request-badge" class="tab-badge" hidden></span>
         </button>
         <button type="button" class="tab manager-only" data-nav="people" hidden>
-          <span class="tab-label">People</span>
+          <span class="tab-label" data-i18n="tab.people">People</span>
         </button>
       </nav>
     </div>
 
     <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
-    <script src="app.js"></script>
+    <script src="i18n.js?v=ai4"></script>
+    <script src="app.js?v=ai4"></script>
   </body>
 </html>

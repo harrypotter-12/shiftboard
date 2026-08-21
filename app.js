@@ -61,8 +61,103 @@
     people: document.getElementById("view-people"),
   };
 
+  const I18N = window.SHIFTBOARD_I18N || { langs: [], en: {} };
+  const LANG_LOCALES = { en: "en-US", es: "es", fr: "fr-CA", pa: "pa-Guru-IN", fil: "fil-PH", ar: "ar" };
+  let currentLang = localStorage.getItem("shiftboard-lang") || "en";
+  if (!I18N[currentLang]) currentLang = "en";
+  let currentViewName = "mine";
+
+  function t(key, vars) {
+    const dict = I18N[currentLang] || I18N.en || {};
+    let text = dict[key] || I18N.en?.[key] || key;
+    if (vars) {
+      Object.entries(vars).forEach(([name, value]) => {
+        text = text.replaceAll(`{${name}}`, String(value));
+      });
+    }
+    return text;
+  }
+
+  function dateLocale() {
+    return LANG_LOCALES[currentLang] || "en-US";
+  }
+
+  function applyI18n() {
+    document.documentElement.lang = currentLang === "pa" ? "pa" : currentLang === "fil" ? "fil" : currentLang;
+    document.documentElement.dir = currentLang === "ar" ? "rtl" : "ltr";
+    document.querySelectorAll("[data-i18n]").forEach((el) => {
+      el.textContent = t(el.dataset.i18n);
+    });
+    document.querySelectorAll("[data-i18n-html]").forEach((el) => {
+      el.innerHTML = t(el.dataset.i18nHtml);
+    });
+    document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
+      el.placeholder = t(el.dataset.i18nPlaceholder);
+    });
+    document.querySelectorAll("[data-i18n-title]").forEach((el) => {
+      const label = t(el.dataset.i18nTitle);
+      el.title = label;
+      el.setAttribute("aria-label", label);
+    });
+    if (loginPassword?.type === "password" && togglePassword) togglePassword.textContent = t("login.show");
+    if (signupPassword?.type === "password" && toggleSignupPassword) toggleSignupPassword.textContent = t("login.show");
+  }
+
+  function renderLangChoices() {
+    const box = document.getElementById("lang-choices");
+    if (!box) return;
+    box.innerHTML = (I18N.langs || [])
+      .map(
+        (lang) => `
+      <button type="button" class="lang-choice ${lang.id === currentLang ? "is-active" : ""}" data-lang="${lang.id}">
+        <strong>${escapeHtml(lang.native)}</strong>
+        <small>${escapeHtml(lang.hint)}</small>
+      </button>`
+      )
+      .join("");
+  }
+
+  function openLangSheet() {
+    const sheet = document.getElementById("lang-sheet");
+    if (!sheet) return;
+    renderLangChoices();
+    sheet.hidden = false;
+  }
+
+  function closeLangSheet() {
+    const sheet = document.getElementById("lang-sheet");
+    if (sheet) sheet.hidden = true;
+  }
+
+  function setLang(id) {
+    if (!I18N[id]) return;
+    currentLang = id;
+    localStorage.setItem("shiftboard-lang", id);
+    applyI18n();
+    closeLangSheet();
+    if (currentUser) {
+      helloLabel.textContent = t("hello.hi", { name: currentUser.name.split(" ")[0] });
+      showView(currentViewName);
+    } else {
+      loadStaffNames();
+    }
+  }
+
   let currentUser = null;
   let usersCache = [];
+
+  function isLead(user = currentUser) {
+    if (!user) return false;
+    if (user.role === "admin" || user.role === "manager") return true;
+    const n = String(user.name || "").trim().toLowerCase();
+    return n === "jash" || n === "cathy";
+  }
+
+  function roleTag(role) {
+    if (role === "admin") return "Admin";
+    if (role === "manager") return "Manager";
+    return "Staff";
+  }
   let myMode = "day";
   let teamMode = "day";
   let myCursor = new Date();
@@ -171,19 +266,19 @@
       const bounds = monthBoundsFrom(cursor);
       return {
         ...bounds,
-        label: cursor.toLocaleDateString(undefined, { month: "long", year: "numeric" }),
+        label: cursor.toLocaleDateString(dateLocale(), { month: "long", year: "numeric" }),
       };
     }
     const bounds = weekBoundsFrom(cursor);
     return {
       ...bounds,
-      label: `${bounds.start.toLocaleDateString(undefined, { month: "short", day: "numeric" })} – ${bounds.end.toLocaleDateString(undefined, { month: "short", day: "numeric" })}`,
+      label: `${bounds.start.toLocaleDateString(dateLocale(), { month: "short", day: "numeric" })} – ${bounds.end.toLocaleDateString(dateLocale(), { month: "short", day: "numeric" })}`,
     };
   }
 
   function formatDayLabel(dateKey) {
     const date = parseDateKey(dateKey);
-    return date.toLocaleDateString(undefined, {
+    return date.toLocaleDateString(dateLocale(), {
       weekday: "long",
       month: "short",
       day: "numeric",
@@ -192,7 +287,7 @@
 
   function formatShortDay(dateKey) {
     const date = parseDateKey(dateKey);
-    return date.toLocaleDateString(undefined, {
+    return date.toLocaleDateString(dateLocale(), {
       weekday: "short",
       month: "short",
       day: "numeric",
@@ -204,7 +299,28 @@
     const [h, min] = value.split(":").map(Number);
     const date = new Date();
     date.setHours(h, min || 0, 0, 0);
-    return date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+    return date.toLocaleTimeString(dateLocale(), { hour: "numeric", minute: "2-digit" });
+  }
+
+  function shiftHours(shift) {
+    const [sh, sm] = String(shift.start || "00:00").split(":").map(Number);
+    const [eh, em] = String(shift.end || "00:00").split(":").map(Number);
+    return Math.max(0, (eh * 60 + em - (sh * 60 + sm)) / 60);
+  }
+
+  function formatHours(n) {
+    const rounded = Math.round(Number(n) * 10) / 10;
+    return Number.isInteger(rounded) ? String(rounded) : String(rounded);
+  }
+
+  function nowMinutes() {
+    const d = new Date();
+    return d.getHours() * 60 + d.getMinutes();
+  }
+
+  function timeToMinutes(value) {
+    const [h, m] = String(value || "00:00").split(":").map(Number);
+    return h * 60 + m;
   }
 
   function savedSession() {
@@ -254,7 +370,7 @@
     loginNameInput.value = "";
     loginPassword.value = "";
     loginPassword.type = "password";
-    togglePassword.textContent = "Show";
+      togglePassword.textContent = t("login.show");
     togglePassword.setAttribute("aria-pressed", "false");
     setLoginError("");
     setSignupError("");
@@ -284,7 +400,7 @@
     const roleInput = signupForm.querySelector('input[name="signup-role"]');
     if (roleInput) roleInput.value = "staff";
     signupPassword.type = "password";
-    toggleSignupPassword.textContent = "Show";
+      toggleSignupPassword.textContent = t("login.show");
     toggleSignupPassword.setAttribute("aria-pressed", "false");
     setTimeout(() => document.getElementById("signup-name").focus(), 80);
   }
@@ -293,15 +409,22 @@
     if (!staff.length) {
       namePicker.innerHTML = "";
       namePickerEmpty.hidden = false;
-      namePickerEmpty.textContent = "No accounts yet. Tap Create an account below.";
+      namePickerEmpty.textContent = t("login.noAccounts");
       return;
     }
 
     namePickerEmpty.hidden = true;
     const last = localStorage.getItem("shiftboard-last-name") || "";
     const sorted = [...staff].sort((a, b) => {
-      if (a.name === last) return -1;
-      if (b.name === last) return 1;
+      const rank = (u) => {
+        const n = String(u.name || "").trim().toLowerCase();
+        if (n === "cathy") return 0;
+        if (n === "jash") return 1;
+        if (u.name === last) return 2;
+        return 3;
+      };
+      const d = rank(a) - rank(b);
+      if (d) return d;
       return a.name.localeCompare(b.name);
     });
 
@@ -312,7 +435,7 @@
         <span class="avatar" aria-hidden="true">${escapeHtml(initials(s.name))}</span>
         <span class="chip-meta">
           <span>${escapeHtml(s.name)}</span>
-          <small>${s.role === "manager" ? "Manager" : "Staff"}</small>
+          <small>${roleTag(s.role)}</small>
         </span>
       </button>
     `
@@ -322,7 +445,7 @@
 
   async function loadStaffNames() {
     namePickerEmpty.hidden = false;
-    namePickerEmpty.textContent = "Loading names…";
+    namePickerEmpty.textContent = t("login.loading");
     try {
       const res = await fetch("/api/staff-names", { cache: "no-store" });
       if (!res.ok) throw new Error("failed");
@@ -331,7 +454,7 @@
     } catch {
       namePicker.innerHTML = "";
       namePickerEmpty.hidden = false;
-      namePickerEmpty.textContent = "Can't load names. Check your connection.";
+      namePickerEmpty.textContent = t("login.loadFail");
     }
   }
 
@@ -343,8 +466,8 @@
     }
     hearScheduleBtn?.classList.remove("is-speaking");
     hearTeamBtn?.classList.remove("is-speaking");
-    if (hearScheduleBtn) hearScheduleBtn.textContent = "Hear schedule";
-    if (hearTeamBtn) hearTeamBtn.textContent = "Hear team";
+    if (hearScheduleBtn) hearScheduleBtn.textContent = t("hear.schedule");
+    if (hearTeamBtn) hearTeamBtn.textContent = t("hear.team");
   }
 
   function speakShifts(shifts, { showName = false, button } = {}) {
@@ -375,7 +498,7 @@
     utter.rate = 0.9;
     if (button) {
       button.classList.add("is-speaking");
-      button.textContent = "Stop";
+      button.textContent = t("hear.stop");
     }
     utter.onend = () => stopSpeech();
     utter.onerror = () => stopSpeech();
@@ -385,24 +508,25 @@
   function showApp() {
     loginGate.hidden = true;
     appShell.hidden = false;
-    helloLabel.textContent = `Hi, ${currentUser.name.split(" ")[0]}`;
+    helloLabel.textContent = t("hello.hi", { name: currentUser.name.split(" ")[0] });
     document.body.dataset.role = currentUser.role;
-    const isManager = currentUser.role === "manager";
+    const lead = isLead();
     document.querySelectorAll(".manager-only").forEach((el) => {
-      el.hidden = !isManager;
+      el.hidden = !lead;
     });
     document.querySelectorAll(".staff-only").forEach((el) => {
-      el.hidden = isManager;
+      el.hidden = lead;
     });
-    document.getElementById("tabbar").classList.toggle("is-manager", isManager);
+    document.getElementById("tabbar").classList.toggle("is-manager", lead);
     // Staff always see a simple week; managers keep day/week/month.
-    myMode = isManager ? "day" : "week";
+    myMode = lead ? "day" : "week";
     myCursor = new Date();
     myCursor.setHours(12, 0, 0, 0);
     mySelectedDay = todayKey();
     syncModeButtons();
     showView("mine");
     loadReminders();
+    loadPendingBadge();
   }
 
   function showLogin() {
@@ -418,6 +542,7 @@
   }
 
   function showView(name) {
+    currentViewName = name;
     Object.entries(views).forEach(([key, el]) => {
       if (!el) return;
       const active = key === name;
@@ -428,7 +553,10 @@
       tab.classList.toggle("is-active", tab.dataset.nav === name);
     });
     if (name === "today") loadTodayBoard();
-    if (name === "mine") loadMySchedule();
+    if (name === "mine") {
+      loadMySchedule();
+      loadStaffExtras();
+    }
     if (name === "team") loadTeamSchedule();
     if (name === "manage") {
       loadUsersForForms();
@@ -437,6 +565,9 @@
       loadManageShifts();
       loadOffDays();
       loadNoteList();
+      loadPendingRequests();
+      loadOpenShiftsManage();
+      setupAiChat();
     }
     if (name === "people") {
       loadPeople();
@@ -461,10 +592,10 @@
   function shiftCardHtml(shift, { showName = false, manage = false } = {}) {
     const isToday = shift.date === todayKey();
     const color = personColor(shift);
-    const simpleStaff = currentUser?.role !== "manager" && !manage && !showName;
+    const simpleStaff = !isLead() && !manage && !showName;
     return `
       <article class="shift-card ${isToday ? "is-today" : ""} ${simpleStaff ? "is-simple" : ""}" data-id="${escapeHtml(shift.id)}" style="--person-color:${escapeHtml(color)}">
-        ${isToday ? `<div class="today-badge">Today</div>` : ""}
+        ${isToday ? `<div class="today-badge">${escapeHtml(t("badge.today"))}</div>` : ""}
         ${simpleStaff ? "" : `<div class="shift-day">${escapeHtml(formatDayLabel(shift.date))}</div>`}
         <div class="shift-time">${escapeHtml(formatTime(shift.start))} – ${escapeHtml(formatTime(shift.end))}</div>
         ${showName ? `<div class="shift-name">${escapeHtml(shift.staffName || "")}</div>` : ""}
@@ -565,23 +696,60 @@
       if (todayTeamNote) {
         if (data.note?.text) {
           todayTeamNote.hidden = false;
-          todayTeamNote.innerHTML = `<strong>Team note</strong><span>${escapeHtml(data.note.text)}</span>`;
+          todayTeamNote.innerHTML = `<strong>${escapeHtml(t("teamNote"))}</strong><span>${escapeHtml(data.note.text)}</span>`;
         } else {
           todayTeamNote.hidden = true;
           todayTeamNote.innerHTML = "";
         }
       }
 
+      const coverageEl = document.getElementById("coverage-strip");
+      const withEl = document.getElementById("working-with");
+      const count = Number(data.workingCount ?? shifts.length);
+      if (coverageEl) {
+        coverageEl.hidden = false;
+        coverageEl.classList.remove("is-short", "is-empty", "is-ok");
+        if (data.coverage === "empty") {
+          coverageEl.classList.add("is-empty");
+          coverageEl.innerHTML = `<strong>${escapeHtml(t("coverage.empty"))}</strong><span>${escapeHtml(t("coverage.emptyHint"))}</span>`;
+        } else if (data.coverage === "short") {
+          coverageEl.classList.add("is-short");
+          coverageEl.innerHTML = `<strong>${escapeHtml(
+            t(count === 1 ? "coverage.short" : "coverage.shortPlural", { count })
+          )}</strong><span>${escapeHtml(t("coverage.shortHint", { min: data.minCoverage || 2 }))}</span>`;
+        } else {
+          coverageEl.classList.add("is-ok");
+          coverageEl.innerHTML = `<strong>${escapeHtml(t("coverage.ok", { count }))}</strong><span>${escapeHtml(t("coverage.okHint"))}</span>`;
+        }
+      }
+
+      if (withEl && !isLead()) {
+        const others = shifts.filter((s) => s.userId !== currentUser.id);
+        const mine = shifts.filter((s) => s.userId === currentUser.id);
+        if (mine.length && others.length) {
+          withEl.hidden = false;
+          const names = others.map((s) => s.staffName).filter(Boolean);
+          const unique = [...new Set(names)];
+          withEl.innerHTML = `<strong>${escapeHtml(t("with.title"))}</strong><span>${escapeHtml(unique.join(", "))}</span>`;
+        } else if (mine.length && !others.length) {
+          withEl.hidden = false;
+          withEl.innerHTML = `<strong>${escapeHtml(t("with.aloneTitle"))}</strong><span>${escapeHtml(t("with.alone"))}</span>`;
+        } else {
+          withEl.hidden = true;
+          withEl.innerHTML = "";
+        }
+      }
+
       if (!shifts.length) {
-        todayBoard.innerHTML = emptyState("Nobody scheduled today", "Add shifts in Make schedule.");
+        todayBoard.innerHTML = emptyState(t("empty.nobodyToday"), t("empty.addShifts"));
       } else {
         todayBoard.innerHTML = shifts
           .map(
             (s) => `
-          <article class="today-card" style="--person-color:${escapeHtml(personColor(s))}">
+          <article class="today-card ${s.userId === currentUser?.id ? "is-you" : ""}" style="--person-color:${escapeHtml(personColor(s))}">
             <span class="avatar" aria-hidden="true">${escapeHtml(initials(s.staffName))}</span>
             <div>
-              <strong>${escapeHtml(s.staffName || "")}</strong>
+              <strong>${escapeHtml(s.staffName || "")}${s.userId === currentUser?.id ? ` · ${t("you")}` : ""}</strong>
               <div class="today-time">${escapeHtml(formatTime(s.start))} – ${escapeHtml(formatTime(s.end))}</div>
               <div class="today-meta">${s.area ? escapeHtml(s.area) : "No floor set"}${s.notes ? ` · ${escapeHtml(s.notes)}` : ""}</div>
             </div>
@@ -595,7 +763,7 @@
         todayOff.innerHTML = "";
       } else {
         todayOff.innerHTML =
-          `<h2 class="list-heading">Off today</h2>` +
+          `<h2 class="list-heading">${escapeHtml(t("off.chip"))}</h2>` +
           off
             .map(
               (o) => `
@@ -729,7 +897,7 @@
         if (list.length) body += list.map((s) => shiftCardHtml(s, { showName, manage })).join("");
         if (!body) {
           body =
-            currentUser?.role !== "manager"
+            !isLead()
               ? `<div class="day-empty">Off / no work</div>`
               : `<div class="day-empty">No shift</div>`;
         }
@@ -832,26 +1000,26 @@
 
   function updateGuides(shiftCount) {
     if (!staffGuide || !managerGuide) return;
-    const isManager = currentUser?.role === "manager";
+    const lead = isLead();
     const onTodayWindow = myMode === "day" && mySelectedDay === todayKey();
-    const staffEmptyWeek = !isManager && myMode === "week" && shiftCount === 0;
-    managerGuide.hidden = !(isManager && onTodayWindow && shiftCount === 0);
-    staffGuide.hidden = !(staffEmptyWeek || (!isManager && onTodayWindow && shiftCount === 0));
+    const staffEmptyWeek = !lead && myMode === "week" && shiftCount === 0;
+    managerGuide.hidden = !(lead && onTodayWindow && shiftCount === 0);
+    staffGuide.hidden = !(staffEmptyWeek || (!lead && onTodayWindow && shiftCount === 0));
   }
 
   async function loadMySchedule() {
     syncModeButtons();
     const range = rangeForMode(myMode, myCursor, mySelectedDay);
     scheduleTitle.textContent =
-      currentUser?.role !== "manager"
-        ? "My days"
+      !isLead()
+        ? t("mine.title")
         : myMode === "day"
-          ? "Today / Day"
+          ? t("title.day")
           : myMode === "week"
-            ? "This week"
-            : "This month";
-    if (currentUser?.role === "manager" && myMode === "day" && mySelectedDay === todayKey()) {
-      scheduleTitle.textContent = "Today";
+            ? t("title.week")
+            : t("title.month");
+    if (isLead() && myMode === "day" && mySelectedDay === todayKey()) {
+      scheduleTitle.textContent = t("title.today");
     }
     scheduleRange.textContent = range.label;
 
@@ -885,21 +1053,25 @@
       }
       lastMyShifts = visible;
       updateGuides(all.length);
+      renderWeekSummary(all, range);
       renderShiftList(mySchedule, visible, {
         fillFrom,
         fillTo,
         offDays: offVisible,
         notes: notesVisible,
-        emptyTitle: myMode === "month" ? "No shifts on this day" : "No days yet",
+        emptyTitle: myMode === "month" ? t("empty.noDay") : t("empty.noDays"),
         emptyText:
-          currentUser?.role === "manager"
-            ? "Use Make schedule to add shifts."
-            : "Ask your manager to add your work days.",
+          isLead() ? t("empty.useManage") : t("empty.askMgr"),
       });
     } catch (err) {
       monthCalendar.hidden = true;
       lastMyShifts = [];
       updateGuides(0);
+      const summary = document.getElementById("week-summary");
+      if (summary) {
+        summary.hidden = true;
+        summary.innerHTML = "";
+      }
       mySchedule.innerHTML = emptyState("Can't load schedule", err.message || "Try again.");
     }
   }
@@ -947,6 +1119,218 @@
       teamMonthCalendar.hidden = true;
       lastTeamShifts = [];
       teamSchedule.innerHTML = emptyState("Can't load team schedule", err.message || "Try again.");
+    }
+  }
+
+  function renderWeekSummary(shifts, range) {
+    const el = document.getElementById("week-summary");
+    if (!el) return;
+    const hours = shifts.reduce((sum, s) => sum + shiftHours(s), 0);
+    const days = new Set(shifts.map((s) => s.date)).size;
+    el.hidden = false;
+    el.innerHTML = `
+      <div>
+        <strong>${escapeHtml(t("hours", { hours: formatHours(hours) }))}</strong>
+        <span>${escapeHtml(
+          t(days === 1 ? "workDays" : "workDaysPlural", { days, label: range?.label || t("title.week") })
+        )}</span>
+      </div>
+    `;
+  }
+
+  function openShiftCardHtml(open, { manage = false } = {}) {
+    const taken = (open.claimed || []).map((p) => p.name).join(", ");
+    const mine = (open.claimedBy || []).includes(currentUser?.id);
+    const spots = Number(open.spotsLeft ?? 0);
+    const actions = manage
+      ? `<button type="button" class="btn btn-danger" data-cancel-open>${escapeHtml(t("open.remove"))}</button>`
+      : mine
+        ? `<span class="open-taken">${escapeHtml(t("open.takenYou"))}</span>`
+        : spots > 0
+          ? `<button type="button" class="btn btn-primary" data-claim-open>${escapeHtml(t("open.take"))}</button>`
+          : `<span class="open-taken">${escapeHtml(t("open.taken"))}</span>`;
+    return `
+      <article class="open-card ${open.filled ? "is-filled" : ""}" data-open-id="${escapeHtml(open.id)}" style="--person-color:${escapeHtml(open.claimed?.[0]?.color || "#2c9b7f")}">
+        <div class="shift-day">${escapeHtml(formatDayLabel(open.date))}</div>
+        <div class="shift-time">${escapeHtml(formatTime(open.start))} – ${escapeHtml(formatTime(open.end))}</div>
+        <div class="shift-area">${escapeHtml(t(spots === 1 ? "open.spot" : "open.spots", { count: spots }))}${open.area ? ` · ${escapeHtml(open.area)}` : ""}</div>
+        ${open.notes ? `<p class="shift-notes">${escapeHtml(open.notes)}</p>` : ""}
+        ${taken ? `<p class="shift-notes">${escapeHtml(t("open.takenBy", { names: taken }))}</p>` : ""}
+        <div class="shift-actions">${actions}</div>
+      </article>
+    `;
+  }
+
+  async function loadStaffExtras() {
+    const askForm = document.getElementById("ask-off-form");
+    if (askForm) askForm.hidden = isLead();
+    const dateInput = document.getElementById("ask-off-date");
+    if (dateInput && !dateInput.value) dateInput.value = todayKey();
+    await Promise.all([loadNextShift(), loadOpenShiftsBoard(), loadMyOffRequests(), loadPendingBadge()]);
+  }
+
+  async function loadNextShift() {
+    const el = document.getElementById("next-shift-card");
+    if (!el || !currentUser) return;
+    try {
+      const from = todayKey();
+      const to = toDateKey(addDays(new Date(), 21));
+      const shifts = await fetchShiftsRange({ mine: true, from, to });
+      const upcoming = shifts.find((s) => {
+        if (s.date > from) return true;
+        if (s.date === from) return timeToMinutes(s.end) > nowMinutes();
+        return false;
+      });
+      if (!upcoming) {
+        el.hidden = true;
+        el.innerHTML = "";
+        return;
+      }
+      const when =
+        upcoming.date === from
+          ? t("today.today")
+          : upcoming.date === toDateKey(addDays(new Date(), 1))
+            ? t("tomorrow")
+            : formatDayLabel(upcoming.date);
+      el.hidden = false;
+      el.innerHTML = `
+        <span class="next-kicker">${escapeHtml(t("nextShift"))}</span>
+        <strong>${escapeHtml(when)}</strong>
+        <span>${escapeHtml(formatTime(upcoming.start))} – ${escapeHtml(formatTime(upcoming.end))}${upcoming.area ? ` · ${escapeHtml(upcoming.area)}` : ""}</span>
+      `;
+    } catch {
+      el.hidden = true;
+    }
+  }
+
+  async function loadOpenShiftsBoard() {
+    const el = document.getElementById("open-shifts-board");
+    if (!el) return;
+    try {
+      const res = await fetch("/api/open-shifts", { headers: authHeaders(), cache: "no-store" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not load extra shifts");
+      const opens = (data.opens || []).filter((o) => !o.filled || (o.claimedBy || []).includes(currentUser?.id));
+      const available = opens.filter((o) => !o.filled);
+      if (!available.length) {
+        el.hidden = true;
+        el.innerHTML = "";
+        return;
+      }
+      el.hidden = false;
+      el.innerHTML =
+        `<h2 class="list-heading">${escapeHtml(t("open.available"))}</h2>` +
+        available.map((o) => openShiftCardHtml(o)).join("");
+    } catch {
+      el.hidden = true;
+    }
+  }
+
+  async function loadMyOffRequests() {
+    const el = document.getElementById("my-off-requests");
+    if (!el || isLead()) {
+      if (el) el.innerHTML = "";
+      return;
+    }
+    try {
+      const res = await fetch("/api/off-requests", { headers: authHeaders(), cache: "no-store" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not load");
+      const recent = (data.requests || []).slice(0, 6);
+      if (!recent.length) {
+        el.innerHTML = "";
+        return;
+      }
+      el.innerHTML = recent
+        .map((r) => {
+          const days = (r.dates || []).map(formatShortDay).join(", ");
+          const status =
+            r.status === "approved"
+              ? t("ask.statusYes")
+              : r.status === "denied"
+                ? t("ask.statusNo")
+                : t("ask.statusWait");
+          return `<div class="request-chip is-${escapeHtml(r.status)}"><span>${escapeHtml(days)}</span><strong>${escapeHtml(status)}</strong></div>`;
+        })
+        .join("");
+    } catch {
+      el.innerHTML = "";
+    }
+  }
+
+  async function loadPendingBadge() {
+    const badge = document.getElementById("request-badge");
+    if (!badge || !isLead()) {
+      if (badge) badge.hidden = true;
+      return;
+    }
+    try {
+      const res = await fetch("/api/off-requests", { headers: authHeaders(), cache: "no-store" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not load");
+      const count = Number(data.pendingCount || 0);
+      badge.hidden = count === 0;
+      badge.textContent = String(count);
+    } catch {
+      badge.hidden = true;
+    }
+  }
+
+  async function loadPendingRequests() {
+    const el = document.getElementById("pending-requests");
+    if (!el || !isLead()) return;
+    try {
+      const res = await fetch("/api/off-requests", { headers: authHeaders(), cache: "no-store" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not load");
+      const pending = (data.requests || []).filter((r) => r.status === "pending");
+      loadPendingBadge();
+      if (!pending.length) {
+        el.hidden = true;
+        el.innerHTML = "";
+        return;
+      }
+      el.hidden = false;
+      el.innerHTML =
+        `<h2 class="list-heading">${escapeHtml(t("pending.heading"))}</h2>` +
+        pending
+          .map((r) => {
+            const days = (r.dates || []).map(formatDayLabel).join(", ");
+            return `
+              <article class="request-card" data-request-id="${escapeHtml(r.id)}">
+                <strong>${escapeHtml(r.staffName)}</strong>
+                <span>${escapeHtml(days)}</span>
+                <p>${escapeHtml(r.reason || "Day off")}</p>
+                <div class="shift-actions">
+                  <button type="button" class="btn btn-primary" data-approve-off>${escapeHtml(t("pending.yes"))}</button>
+                  <button type="button" class="btn btn-ghost" data-deny-off>${escapeHtml(t("pending.no"))}</button>
+                </div>
+              </article>
+            `;
+          })
+          .join("");
+    } catch {
+      el.hidden = true;
+    }
+  }
+
+  async function loadOpenShiftsManage() {
+    const el = document.getElementById("open-shift-list");
+    const dateInput = document.getElementById("open-date");
+    if (dateInput && !dateInput.value) dateInput.value = todayKey();
+    if (!el) return;
+    try {
+      const res = await fetch("/api/open-shifts", { headers: authHeaders(), cache: "no-store" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not load");
+      const opens = data.opens || [];
+      if (!opens.length) {
+        el.innerHTML = `<p class="field-hint">No extra shifts posted yet.</p>`;
+        return;
+      }
+      el.innerHTML = opens.map((o) => openShiftCardHtml(o, { manage: true })).join("");
+    } catch (err) {
+      el.innerHTML = emptyState("Can't load extra shifts", err.message || "Try again.");
     }
   }
 
@@ -1153,7 +1537,7 @@
   async function loadPasswordHelp() {
     const box = document.getElementById("password-help-box");
     const list = document.getElementById("password-help-list");
-    if (!box || !list || currentUser?.role !== "manager") return;
+    if (!box || !list || !isLead()) return;
     try {
       const res = await fetch("/api/password-help", { headers: authHeaders(), cache: "no-store" });
       const data = await res.json();
@@ -1202,13 +1586,13 @@
             <span class="avatar" aria-hidden="true" style="background:${escapeHtml(personColor(u))}">${escapeHtml(initials(u.name))}</span>
             <div>
               <strong>${escapeHtml(u.name)}</strong>
-              <small>${u.role === "manager" ? "Manager" : "Staff"}</small>
+              <small>${roleTag(u.role)}</small>
             </div>
           </div>
           <div class="person-actions">
             <button type="button" class="btn btn-soft" data-reset-pin>New password</button>
             ${
-              u.id === currentUser.id
+              u.id === currentUser.id || u.role === "admin"
                 ? ""
                 : `<button type="button" class="btn btn-danger" data-remove-person>Remove</button>`
             }
@@ -1421,7 +1805,7 @@
     button.addEventListener("click", () => {
       const showing = input.type === "text";
       input.type = showing ? "password" : "text";
-      button.textContent = showing ? "Show" : "Hide";
+      button.textContent = showing ? t("login.show") : t("login.hide");
       button.setAttribute("aria-pressed", showing ? "false" : "true");
       input.focus();
     });
@@ -1436,6 +1820,17 @@
     return next;
   }
 
+  document.querySelectorAll("[data-open-lang]").forEach((btn) => {
+    btn.addEventListener("click", () => openLangSheet());
+  });
+  document.getElementById("lang-close")?.addEventListener("click", () => closeLangSheet());
+  document.getElementById("lang-backdrop")?.addEventListener("click", () => closeLangSheet());
+  document.getElementById("lang-choices")?.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-lang]");
+    if (!btn) return;
+    setLang(btn.dataset.lang);
+  });
+
   namePicker.addEventListener("click", (e) => {
     const chip = e.target.closest("[data-name]");
     if (!chip) return;
@@ -1443,8 +1838,8 @@
   });
 
   document.getElementById("login-back").addEventListener("click", () => showNameStep());
-  document.getElementById("go-signup").addEventListener("click", () => showSignupStep());
-  document.getElementById("signup-back").addEventListener("click", () => showNameStep());
+  document.getElementById("go-signup")?.addEventListener("click", () => showSignupStep());
+  document.getElementById("signup-back")?.addEventListener("click", () => showNameStep());
   document.getElementById("guide-make-schedule")?.addEventListener("click", () => showView("manage"));
 
   wireShowHide(loginPassword, togglePassword);
@@ -1559,8 +1954,7 @@
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Could not ask for help");
       setLoginError("");
-      const simple =
-        "OK — tell your manager. They will give you a new password.";
+        const simple = t("forgot.ok");
       if (msg) {
         msg.hidden = false;
         msg.textContent = simple;
@@ -1915,7 +2309,7 @@
       saveSession(currentUser);
       localStorage.setItem("shiftboard-last-name", name);
       showApp();
-      if (currentUser.role === "manager") {
+      if (isLead(currentUser)) {
         showToast("Account ready — now make the schedule");
         showView("manage");
       } else {
@@ -2123,6 +2517,232 @@
     }
   });
 
+  document.getElementById("ask-off-form")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const date = document.getElementById("ask-off-date")?.value;
+    const reason = document.getElementById("ask-off-reason")?.value.trim();
+    if (!date) {
+      showToast("Pick a day first.");
+      return;
+    }
+    try {
+      const res = await fetch("/api/off-requests", {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({ date, reason }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not ask");
+      document.getElementById("ask-off-reason").value = "";
+      showToast(data.message || "Asked your manager.");
+      await loadMyOffRequests();
+    } catch (err) {
+      showToast(err.message || "Could not ask");
+    }
+  });
+
+  document.getElementById("pending-requests")?.addEventListener("click", async (e) => {
+    const card = e.target.closest("[data-request-id]");
+    if (!card) return;
+    const id = card.dataset.requestId;
+    const approve = e.target.closest("[data-approve-off]");
+    const deny = e.target.closest("[data-deny-off]");
+    if (!approve && !deny) return;
+    const action = approve ? "approve" : "deny";
+    try {
+      const res = await fetch(`/api/off-requests/${encodeURIComponent(id)}`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({ action }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not save");
+      showToast(data.message || "Saved");
+      await loadPendingRequests();
+      await loadOffDays();
+      await loadManageShifts();
+    } catch (err) {
+      showToast(err.message || "Could not save");
+    }
+  });
+
+  document.getElementById("open-time-presets")?.addEventListener("click", (e) => {
+    const chip = e.target.closest("[data-start]");
+    if (!chip) return;
+    document.getElementById("open-start").value = chip.dataset.start;
+    document.getElementById("open-end").value = chip.dataset.end;
+  });
+
+  document.getElementById("open-shift-form")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const date = document.getElementById("open-date")?.value;
+    const start = document.getElementById("open-start")?.value;
+    const end = document.getElementById("open-end")?.value;
+    const needed = document.getElementById("open-needed")?.value;
+    const area = document.getElementById("open-area")?.value.trim();
+    const notes = document.getElementById("open-notes")?.value.trim();
+    if (!date || !start || !end) {
+      showToast("Pick a day and times.");
+      return;
+    }
+    try {
+      const res = await fetch("/api/open-shifts", {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({ date, start, end, needed, area, notes }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not post");
+      document.getElementById("open-notes").value = "";
+      showToast(data.message || "Posted extra shift");
+      await loadOpenShiftsManage();
+    } catch (err) {
+      showToast(err.message || "Could not post");
+    }
+  });
+
+  document.getElementById("open-shift-list")?.addEventListener("click", async (e) => {
+    const card = e.target.closest("[data-open-id]");
+    if (!card) return;
+    if (!e.target.closest("[data-cancel-open]")) return;
+    if (!window.confirm("Remove this extra shift?")) return;
+    try {
+      const res = await fetch(`/api/open-shifts/${encodeURIComponent(card.dataset.openId)}`, {
+        method: "DELETE",
+        headers: authHeaders(),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not remove");
+      showToast("Extra shift removed");
+      await loadOpenShiftsManage();
+    } catch (err) {
+      showToast(err.message || "Could not remove");
+    }
+  });
+
+  document.getElementById("open-shifts-board")?.addEventListener("click", async (e) => {
+    const card = e.target.closest("[data-open-id]");
+    if (!card) return;
+    if (!e.target.closest("[data-claim-open]")) return;
+    try {
+      const res = await fetch(`/api/open-shifts/${encodeURIComponent(card.dataset.openId)}/claim`, {
+        method: "POST",
+        headers: authHeaders(),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not take it");
+      showToast(data.message || "You got it");
+      await loadStaffExtras();
+      await loadMySchedule();
+    } catch (err) {
+      showToast(err.message || "Could not take it");
+    }
+  });
+
+  const aiThread = document.getElementById("ai-thread");
+  const aiForm = document.getElementById("ai-form");
+  const aiInput = document.getElementById("ai-input");
+  const aiSend = document.getElementById("ai-send");
+  let aiHistory = [];
+  let aiReady = false;
+
+  function aiBubble(role, text, pending = false) {
+    if (!aiThread) return null;
+    const el = document.createElement("div");
+    el.className = `ai-bubble is-${role}${pending ? " is-pending" : ""}`;
+    el.textContent = text;
+    aiThread.appendChild(el);
+    aiThread.scrollTop = aiThread.scrollHeight;
+    return el;
+  }
+
+  function setupAiChat() {
+    if (!aiThread || aiReady) return;
+    aiReady = true;
+    aiThread.innerHTML = "";
+    aiBubble("ai", t("ai.hello"));
+  }
+
+  async function sendAiMessage(text) {
+    const message = String(text || "").trim();
+    if (!message) return;
+    if (!currentUser) {
+      showToast("Sign in first");
+      return;
+    }
+    if (!isLead()) {
+      showToast("Ask AI is for Jash and Cathy");
+      return;
+    }
+    setupAiChat();
+    aiBubble("user", message);
+    aiHistory.push({ role: "user", content: message });
+    if (aiInput) aiInput.value = "";
+    const pending = aiBubble("ai", "Working on it…", true);
+    if (aiSend) {
+      aiSend.disabled = true;
+      aiSend.classList.add("is-loading");
+    }
+    try {
+      const res = await fetch("/api/ai-chat", {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({ message, history: aiHistory.slice(-8) }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Could not ask");
+      const reply = data.reply || "Done.";
+      if (pending) {
+        pending.textContent = reply;
+        pending.classList.remove("is-pending");
+      } else {
+        aiBubble("ai", reply);
+      }
+      aiHistory.push({ role: "assistant", content: reply });
+      if (data.changed) {
+        showToast("Schedule updated");
+        loadManageShifts();
+        loadTeamSchedule();
+        loadTodayBoard();
+        loadOffDays();
+      }
+    } catch (err) {
+      const fail = err.message || "Could not ask right now.";
+      if (pending) {
+        pending.textContent = fail;
+        pending.classList.remove("is-pending");
+      }
+      showToast(fail);
+    } finally {
+      if (aiSend) {
+        aiSend.disabled = false;
+        aiSend.classList.remove("is-loading");
+      }
+      if (aiThread) aiThread.scrollTop = aiThread.scrollHeight;
+    }
+  }
+      aiThread.scrollTop = aiThread.scrollHeight;
+    }
+  }
+
+  aiForm?.addEventListener("submit", (e) => {
+    e.preventDefault();
+    sendAiMessage(aiInput?.value);
+  });
+
+  aiInput?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendAiMessage(aiInput.value);
+    }
+  });
+
+  document.getElementById("ai-suggestions")?.addEventListener("click", (e) => {
+    const chip = e.target.closest("[data-ai-prompt]");
+    if (!chip) return;
+    sendAiMessage(chip.dataset.aiPrompt);
+  });
+
   async function boot() {
     await loadStaffNames();
     const saved = savedSession();
@@ -2146,5 +2766,6 @@
   }
 
   resetShiftForm();
+  applyI18n();
   boot();
 })();

@@ -2,7 +2,7 @@
 
 Housekeeping staff schedules — big, clear, and easy to use.
 
-Staff sign in with **name + password** and see their week. Managers add people and build the schedule.
+Staff sign in with **name + password** and see their week. Admins add people and build the schedule.
 
 ## Live link
 
@@ -15,28 +15,36 @@ Staff sign in with **name + password** and see their week. Managers add people a
 ## How people join
 
 1. Open the link.
-2. Tap your name (or **I'm new — make my name**).
+2. Tap your name.
 3. Enter a short password (4 numbers is fine).
-4. Staff see **My days**. Managers also get **Team**, **Make schedule**, and **People**.
+4. Staff see **My days**. Admins also get **Team**, **Make schedule**, and **People**.
 
 Demo accounts (first install only, if no users exist yet):
 
 | Name | Password | Role |
 | --- | --- | --- |
-| Manager | `1234` | Manager |
-| Linda | `0000` | Staff |
+| Jash | `4844` | Admin |
+| Cathy | `8167` | Manager |
 | Maria | `0000` | Staff |
 
 ## How to use
 
-1. Manager adds people in **People** (or staff create their own name).
-2. Manager opens **Make schedule** and adds who works, day, and times.
+1. Admin adds people in **People**.
+2. Admin opens **Make schedule** and adds who works, day, and times.
 3. Staff sign in and see **My days** for the week.
-4. Managers can export the week with **Save Excel** / **Save PDF**.
+4. Admins can export the week with **Save Excel** / **Save PDF**.
+
+## New extras
+
+- **Ask AI** — at the top of Make schedule, Cathy and Jash can chat to add shifts
+- **Need a day off?** — staff ask, admin says yes or no
+- **Extra shifts** — admin posts cover, staff tap **I'll take it**
+- **Today coverage** — shows if the floor looks short
+- **Other languages** — English, Tagalog, Arabic, Español, Français, ਪੰਜਾਬੀ
 
 ## GitHub
 
-https://github.com/harrypotter-12/linenboard
+https://github.com/harrypotter-12/shiftboard
 
 ## Run locally
 
