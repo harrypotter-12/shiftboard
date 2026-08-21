@@ -1,5 +1,5 @@
-const CACHE = "shiftboard-v4";
-const SHELL = ["/", "/index.html", "/styles.css?v=ai17", "/app.js?v=ai17", "/i18n.js?v=ai17", "/favicon.svg", "/icon-192.png", "/icon-512.png"];
+const CACHE = "shiftboard-v5";
+const SHELL = ["/styles.css?v=ai18", "/app.js?v=ai18", "/i18n.js?v=ai18", "/favicon.svg", "/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
@@ -15,6 +15,10 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
   if (event.request.method !== "GET" || url.origin !== self.location.origin || url.pathname.startsWith("/api/")) return;
+  if (url.pathname === "/sw.js" || event.request.mode === "navigate" || url.pathname === "/" || url.pathname.endsWith(".html")) {
+    event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
+    return;
+  }
   event.respondWith(
     caches.open(CACHE).then(async (cache) => {
       const cached = await cache.match(event.request);

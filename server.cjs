@@ -760,12 +760,13 @@ function serveStatic(req, res, urlPath) {
   const send = (data) => {
     const ext = path.extname(filePath).toLowerCase();
     const isHtml = ext === ".html" || urlPath === "/";
+    const isSw = path.basename(filePath) === "sw.js";
     writePayload(
       res,
       200,
       {
         "Content-Type": TYPES[ext] || "application/octet-stream",
-        "Cache-Control": isHtml ? "no-cache" : "public, max-age=604800",
+        "Cache-Control": isHtml || isSw ? "no-cache" : "public, max-age=604800",
       },
       data
     );
