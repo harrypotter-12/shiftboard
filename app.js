@@ -2929,6 +2929,11 @@
     navigator.serviceWorker.register("/sw.js").catch(() => {});
   }
 
+  setInterval(() => {
+    if (document.visibilityState !== "visible") return;
+    fetch("/api/health", { cache: "no-store" }).catch(() => {});
+  }, 8 * 60 * 1000);
+
   async function boot() {
     await loadStaffNames();
     const saved = savedSession();

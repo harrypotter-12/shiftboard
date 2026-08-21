@@ -1,6 +1,7 @@
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const zlib = require("zlib");
 const { randomUUID, scryptSync, timingSafeEqual, randomBytes } = require("crypto");
 const { planChat } = require("./schedule-ai.cjs");
 
@@ -449,16 +450,37 @@ function addDaysDate(date, days) {
   return d;
 }
 
-function sendJson(res, status, body) {
-  const payload = JSON.stringify(body);
-  res.writeHead(status, {
-    "Content-Type": "application/json; charset=utf-8",
-    "Cache-Control": "no-store",
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET,POST,PATCH,DELETE,OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, X-User-Id",
-  });
+function writePayload(res, status, headers, body) {
+  let payload = Buffer.isBuffer(body) ? body : Buffer.from(String(body));
+  const type = headers["Content-Type"] || "";
+  const accept = String(res._req?.headers?.["accept-encoding"] || "");
+  const textish = /json|text|javascript|svg|manifest|xml|markdown/i.test(type);
+  if (textish && payload.length > 180 && /\bgzip\b/.test(accept)) {
+    const gz = zlib.gzipSync(payload);
+    if (gz.length < payload.length) {
+      payload = gz;
+      headers["Content-Encoding"] = "gzip";
+      headers["Vary"] = "Accept-Encoding";
+    }
+  }
+  headers["Content-Length"] = payload.length;
+  res.writeHead(status, headers);
   res.end(payload);
+}
+
+function sendJson(res, status, body) {
+  writePayload(
+    res,
+    status,
+    {
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "no-store",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET,POST,PATCH,DELETE,OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, X-User-Id",
+    },
+    JSON.stringify(body)
+  );
 }
 
 function readBody(req) {
@@ -726,11 +748,31 @@ function isValidTime(value) {
   return /^\d{2}:\d{2}$/.test(String(value || ""));
 }
 
+const staticCache = new Map();
+
 function serveStatic(req, res, urlPath) {
   let filePath = path.join(ROOT, urlPath === "/" ? "index.html" : urlPath);
   if (!filePath.startsWith(ROOT)) {
     res.writeHead(403);
     res.end("Forbidden");
+    return;
+  }
+  const send = (data) => {
+    const ext = path.extname(filePath).toLowerCase();
+    const isHtml = ext === ".html" || urlPath === "/";
+    writePayload(
+      res,
+      200,
+      {
+        "Content-Type": TYPES[ext] || "application/octet-stream",
+        "Cache-Control": isHtml ? "no-cache" : "public, max-age=604800",
+      },
+      data
+    );
+  };
+  const cached = staticCache.get(filePath);
+  if (cached) {
+    send(cached);
     return;
   }
   fs.readFile(filePath, (err, data) => {
@@ -739,15 +781,19 @@ function serveStatic(req, res, urlPath) {
       res.end("Not found");
       return;
     }
-    const ext = path.extname(filePath).toLowerCase();
-    res.writeHead(200, { "Content-Type": TYPES[ext] || "application/octet-stream" });
-    res.end(data);
+    staticCache.set(filePath, data);
+    send(data);
   });
 }
 
 async function handleApi(req, res, urlPath) {
   if (req.method === "OPTIONS") {
     sendJson(res, 204, {});
+    return;
+  }
+
+  if (urlPath === "/api/health" && req.method === "GET") {
+    sendJson(res, 200, { ok: true });
     return;
   }
 
@@ -1768,6 +1814,7 @@ async function handleApi(req, res, urlPath) {
 ensureData();
 
 const server = http.createServer(async (req, res) => {
+  res._req = req;
   const urlPath = decodeURIComponent((req.url || "/").split("?")[0]);
 
   try {

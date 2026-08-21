@@ -16,8 +16,8 @@
   --today-soft: #e5f3f8;
   --danger: #a33b32;
   --danger-soft: #f8eceb;
-  --font: "Nunito", "Segoe UI", sans-serif;
-  --display: "Fraunces", Georgia, serif;
+  --font: "Nunito", ui-rounded, "Segoe UI", system-ui, sans-serif;
+  --display: "Fraunces", ui-serif, Georgia, serif;
   --shadow: 0 12px 30px rgba(12, 36, 56, 0.08);
   --shadow-strong: 0 22px 50px rgba(8, 24, 40, 0.22);
   --radius: 20px;

@@ -1,5 +1,5 @@
-const CACHE = "shiftboard-v1";
-const SHELL = ["/", "/index.html", "/styles.css", "/app.js", "/i18n.js", "/favicon.svg", "/icon-192.png", "/icon-512.png"];
+const CACHE = "shiftboard-v2";
+const SHELL = ["/", "/index.html", "/styles.css?v=ai14", "/app.js?v=ai14", "/i18n.js?v=ai14", "/favicon.svg", "/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(SHELL)).then(() => self.skipWaiting()));
@@ -13,14 +13,17 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
-  if (event.request.method !== "GET" || url.pathname.startsWith("/api/")) return;
+  if (event.request.method !== "GET" || url.origin !== self.location.origin || url.pathname.startsWith("/api/")) return;
   event.respondWith(
-    fetch(event.request)
-      .then((res) => {
-        const copy = res.clone();
-        caches.open(CACHE).then((cache) => cache.put(event.request, copy)).catch(() => {});
-        return res;
-      })
-      .catch(() => caches.match(event.request).then((hit) => hit || caches.match("/")))
+    caches.open(CACHE).then(async (cache) => {
+      const cached = await cache.match(event.request);
+      const network = fetch(event.request)
+        .then((res) => {
+          if (res.ok) cache.put(event.request, res.clone());
+          return res;
+        })
+        .catch(() => cached);
+      return cached || network;
+    })
   );
 });
