@@ -16,8 +16,8 @@
   --today-soft: #e5f3f8;
   --danger: #a33b32;
   --danger-soft: #f8eceb;
-  --font: "Nunito", ui-rounded, "Segoe UI", system-ui, sans-serif;
-  --display: "Fraunces", ui-serif, Georgia, serif;
+  --font: ui-rounded, "Segoe UI", system-ui, sans-serif;
+  --display: ui-serif, Georgia, serif;
   --shadow: 0 12px 30px rgba(12, 36, 56, 0.08);
   --shadow-strong: 0 22px 50px rgba(8, 24, 40, 0.22);
   --radius: 20px;
@@ -110,7 +110,7 @@ button {
   width: min(460px, 100%);
   display: grid;
   gap: 1.1rem;
-  animation: rise 480ms ease both;
+  animation: rise 180ms ease both;
 }
 
 .login-hero {
@@ -149,8 +149,8 @@ button {
 }
 
 .login-panel {
-  background: rgba(255, 255, 255, 0.98);
-  border: 1px solid rgba(255, 255, 255, 0.55);
+  background: #fff;
+  border: 1px solid #fff;
   border-radius: 28px;
   padding: 1.35rem 1.25rem 1.3rem;
   box-shadow: var(--shadow-strong);
@@ -208,6 +208,11 @@ button {
   margin-top: 0.85rem;
   display: grid;
   gap: 0.4rem;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #fff;
+  padding-bottom: 0.35rem;
 }
 
 .name-search-field {
@@ -246,8 +251,15 @@ button {
   font-size: 1.05rem;
 }
 
+.name-chip-continue {
+  width: 100%;
+  margin-top: 0.85rem;
+  border-color: var(--sea) !important;
+  background: var(--sea-soft) !important;
+}
+
 .name-chip {
-  min-height: 3.6rem;
+  min-height: 3.9rem;
   border: 2px solid var(--line);
   border-radius: 16px;
   background: linear-gradient(180deg, #fff 0%, #f7fafc 100%);
@@ -1890,7 +1902,8 @@ body[data-role="admin"] .staff-only {
 }
 
 .home-screen-card {
-  margin-top: 1rem;
+  margin-top: 0.85rem;
+  margin-bottom: 0.15rem;
   padding: 0.95rem 1rem;
   border-radius: 18px;
   border: 1.5px solid #c4e5db;

@@ -12,15 +12,7 @@
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      rel="preload"
-      as="style"
-      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Nunito:wght@500;600;700;800&display=swap"
-      onload="this.onload=null;this.rel='stylesheet'"
-    />
-    <link rel="stylesheet" href="styles.css?v=ai14" />
+    <link rel="stylesheet" href="styles.css?v=ai16" />
   </head>
   <body>
     <div id="lang-sheet" class="lang-sheet" hidden>
@@ -79,8 +71,13 @@
                 </button>
               </div>
             </form>
-            <div id="name-picker" class="name-picker" aria-label="Staff names"></div>
-            <p id="name-picker-empty" class="picker-empty" hidden data-i18n="login.loading">Loading names…</p>
+            <button type="button" id="continue-as" class="name-chip name-chip-continue" hidden>
+              <span class="avatar" id="continue-avatar">?</span>
+              <span class="chip-meta">
+                <span id="continue-label">Continue</span>
+                <small data-i18n="login.continueHint">You used this last time</small>
+              </span>
+            </button>
             <div id="home-screen-card" class="home-screen-card js-home-card" hidden>
               <strong data-i18n="home.title">Put ShiftBoard on your phone</strong>
               <p id="home-screen-help" class="field-hint js-home-help" data-i18n="home.ios">iPhone: tap Share, then Add to Home Screen.</p>
@@ -89,6 +86,8 @@
                 <button type="button" class="btn btn-ghost btn-wide js-home-dismiss" data-i18n="home.dismiss">Not now</button>
               </div>
             </div>
+            <div id="name-picker" class="name-picker" aria-label="Staff names"></div>
+            <p id="name-picker-empty" class="picker-empty" hidden data-i18n="login.loading">Loading names…</p>
           </div>
 
           <div id="login-step-pass" class="login-step" hidden>
@@ -604,7 +603,7 @@
     </div>
 
     <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
-    <script src="i18n.js?v=ai14"></script>
-    <script src="app.js?v=ai14"></script>
+    <script src="i18n.js?v=ai16"></script>
+    <script src="app.js?v=ai16"></script>
   </body>
 </html>

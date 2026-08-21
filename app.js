@@ -442,6 +442,8 @@
       namePicker.innerHTML = "";
       namePickerEmpty.hidden = false;
       namePickerEmpty.textContent = t("login.noAccounts");
+      const continueBtn = document.getElementById("continue-as");
+      if (continueBtn) continueBtn.hidden = true;
       return;
     }
 
@@ -449,11 +451,24 @@
       namePicker.innerHTML = "";
       namePickerEmpty.hidden = false;
       namePickerEmpty.textContent = t("login.noMatch");
+      const continueBtn = document.getElementById("continue-as");
+      if (continueBtn) continueBtn.hidden = true;
       return;
     }
 
     namePickerEmpty.hidden = true;
     const last = localStorage.getItem("shiftboard-last-name") || "";
+    const continueBtn = document.getElementById("continue-as");
+    const lastPerson = staffNamesCache.find((s) => s.name === last);
+    if (continueBtn) {
+      const showContinue = Boolean(lastPerson && (!String(nameSearch?.value || "").trim() || visible.some((s) => s.name === last)));
+      continueBtn.hidden = !showContinue;
+      continueBtn.dataset.name = lastPerson?.name || "";
+      const continueAvatar = document.getElementById("continue-avatar");
+      const continueLabel = document.getElementById("continue-label");
+      if (continueAvatar) continueAvatar.textContent = initials(last);
+      if (continueLabel) continueLabel.textContent = t("login.continue", { name: last });
+    }
     const sorted = [...visible].sort((a, b) => {
       const rank = (u) => {
         const n = String(u.name || "").trim().toLowerCase();
@@ -483,14 +498,25 @@
   }
 
   async function loadStaffNames() {
-    namePickerEmpty.hidden = false;
-    namePickerEmpty.textContent = t("login.loading");
+    try {
+      const cached = JSON.parse(localStorage.getItem("shiftboard-staff-names") || "[]");
+      if (Array.isArray(cached) && cached.length) renderNamePicker(cached);
+    } catch {
+      /* ignore bad cache */
+    }
+    if (!staffNamesCache.length) {
+      namePickerEmpty.hidden = false;
+      namePickerEmpty.textContent = t("login.loading");
+    }
     try {
       const res = await fetch("/api/staff-names", { cache: "no-store" });
       if (!res.ok) throw new Error("failed");
       const data = await res.json();
-      renderNamePicker(Array.isArray(data.staff) ? data.staff : []);
+      const staff = Array.isArray(data.staff) ? data.staff : [];
+      renderNamePicker(staff);
+      localStorage.setItem("shiftboard-staff-names", JSON.stringify(staff));
     } catch {
+      if (staffNamesCache.length) return;
       namePicker.innerHTML = "";
       staffNamesCache = [];
       namePickerEmpty.hidden = false;
@@ -579,6 +605,7 @@
     document.body.removeAttribute("data-role");
     showNameStep();
     loadStaffNames();
+    setTimeout(() => nameSearch?.focus(), 80);
   }
 
   function showView(name) {
@@ -1940,6 +1967,10 @@
 
   nameSearch?.addEventListener("input", () => runNameSearch(false));
   nameSearch?.addEventListener("search", () => runNameSearch(true));
+  document.getElementById("continue-as")?.addEventListener("click", (e) => {
+    const name = e.currentTarget?.dataset?.name;
+    if (name) showPasswordStep(name);
+  });
 
   document.getElementById("login-back").addEventListener("click", () => showNameStep());
   document.getElementById("go-signup")?.addEventListener("click", () => showSignupStep());
@@ -2935,7 +2966,6 @@
   }, 8 * 60 * 1000);
 
   async function boot() {
-    await loadStaffNames();
     const saved = savedSession();
     if (!saved?.id) {
       showLogin();

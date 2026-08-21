@@ -1,8 +1,9 @@
-const CACHE = "shiftboard-v2";
-const SHELL = ["/", "/index.html", "/styles.css?v=ai14", "/app.js?v=ai14", "/i18n.js?v=ai14", "/favicon.svg", "/icon-192.png", "/icon-512.png"];
+const CACHE = "shiftboard-v3";
+const SHELL = ["/", "/index.html", "/styles.css?v=ai16", "/app.js?v=ai16", "/i18n.js?v=ai16", "/favicon.svg", "/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(SHELL)).then(() => self.skipWaiting()));
+  self.skipWaiting();
+  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(SHELL).catch(() => {})));
 });
 
 self.addEventListener("activate", (event) => {
