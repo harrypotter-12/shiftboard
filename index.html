@@ -12,7 +12,19 @@
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
-    <link rel="stylesheet" href="styles.css?v=ai19" />
+    <link rel="stylesheet" href="styles.css?v=ai20" />
+    <script>
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function (regs) {
+          return Promise.all(regs.map(function (reg) { return reg.unregister(); }));
+        }).then(function () {
+          if (!window.caches) return;
+          return caches.keys().then(function (keys) {
+            return Promise.all(keys.map(function (key) { return caches.delete(key); }));
+          });
+        }).catch(function () {});
+      }
+    </script>
   </head>
   <body>
     <div id="lang-sheet" class="lang-sheet" hidden>
@@ -603,7 +615,7 @@
     </div>
 
     <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
-    <script src="i18n.js?v=ai19"></script>
-    <script src="app.js?v=ai19"></script>
+    <script src="i18n.js?v=ai20"></script>
+    <script src="app.js?v=ai20"></script>
   </body>
 </html>

@@ -2961,7 +2961,7 @@
   });
 
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("/sw.js?v=ai19", { updateViaCache: "none" }).catch(() => {});
+    navigator.serviceWorker.getRegistrations().then((regs) => Promise.all(regs.map((reg) => reg.unregister()))).catch(() => {});
   }
 
   setInterval(() => {

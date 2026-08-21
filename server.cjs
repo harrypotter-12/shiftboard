@@ -778,6 +778,10 @@ function serveStatic(req, res, urlPath) {
   }
   fs.readFile(filePath, (err, data) => {
     if (err) {
+      if (urlPath !== "/" && !path.extname(urlPath)) {
+        serveStatic(req, res, "/");
+        return;
+      }
       res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
       res.end("Not found");
       return;
