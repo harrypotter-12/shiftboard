@@ -1,5 +1,5 @@
-const CACHE = "shiftboard-v5";
-const SHELL = ["/styles.css?v=ai18", "/app.js?v=ai18", "/i18n.js?v=ai18", "/favicon.svg", "/icon-192.png", "/icon-512.png"];
+const CACHE = "shiftboard-v6";
+const SHELL = ["/styles.css?v=ai19", "/app.js?v=ai19", "/i18n.js?v=ai19", "/favicon.svg", "/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();

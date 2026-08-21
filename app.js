@@ -640,7 +640,9 @@
       loadPeople();
       loadPasswordHelp();
     }
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    const board = document.querySelector("main");
+    if (board) board.scrollTop = 0;
+    else window.scrollTo(0, 0);
   }
 
   function emptyState(title, text) {
@@ -2573,7 +2575,9 @@
         document.getElementById("shift-notes").value = shift.notes || "";
         document.getElementById("shift-submit").textContent = "Update shift";
         document.getElementById("shift-cancel").hidden = false;
-        window.scrollTo({ top: 0, behavior: "smooth" });
+        const board = document.querySelector("main");
+        if (board) board.scrollTop = 0;
+        else window.scrollTo(0, 0);
       } catch (err) {
         showToast(err.message || "Could not edit");
       }
@@ -2957,7 +2961,7 @@
   });
 
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("/sw.js?v=ai18", { updateViaCache: "none" }).catch(() => {});
+    navigator.serviceWorker.register("/sw.js?v=ai19", { updateViaCache: "none" }).catch(() => {});
   }
 
   setInterval(() => {
