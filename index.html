@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="ShiftBoard" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="apple-touch-icon" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -57,8 +57,36 @@
             <div class="step-label"><span>1</span> <span data-i18n="login.step1">Tap your name</span></div>
             <h2 data-i18n="login.who">Who are you?</h2>
             <p class="login-help" data-i18n="login.help">Find your name and tap it.</p>
+            <form id="name-search-form" class="name-search-form">
+              <label class="field name-search-field" for="name-search">
+                <span data-i18n="login.find">Find your name</span>
+              </label>
+              <div class="name-search-box">
+                <input
+                  id="name-search"
+                  class="name-search"
+                  type="search"
+                  enterkeyhint="search"
+                  autocomplete="off"
+                  spellcheck="false"
+                  data-i18n-placeholder="login.findHint"
+                  placeholder="Start typing…"
+                />
+                <button type="submit" class="btn btn-primary name-search-btn" id="name-search-btn" data-i18n="login.search">
+                  Search
+                </button>
+              </div>
+            </form>
             <div id="name-picker" class="name-picker" aria-label="Staff names"></div>
             <p id="name-picker-empty" class="picker-empty" hidden data-i18n="login.loading">Loading names…</p>
+            <div id="home-screen-card" class="home-screen-card js-home-card" hidden>
+              <strong data-i18n="home.title">Put ShiftBoard on your phone</strong>
+              <p id="home-screen-help" class="field-hint js-home-help" data-i18n="home.ios">iPhone: tap Share, then Add to Home Screen.</p>
+              <div class="home-screen-actions">
+                <button type="button" class="btn btn-primary btn-wide js-home-install" hidden data-i18n="home.add">Add to Home Screen</button>
+                <button type="button" class="btn btn-ghost btn-wide js-home-dismiss" data-i18n="home.dismiss">Not now</button>
+              </div>
+            </div>
           </div>
 
           <div id="login-step-pass" class="login-step" hidden>
@@ -107,7 +135,7 @@
             <form id="signup-form" class="login-form" novalidate>
               <label class="field">
                 <span data-i18n="login.firstName">Your first name</span>
-                <input id="signup-name" type="text" autocomplete="name" data-i18n-placeholder="placeholder.name" placeholder="Example: Linda" required />
+                <input id="signup-name" type="text" autocomplete="name" data-i18n-placeholder="placeholder.name" placeholder="Example: Rose" required />
               </label>
               <label class="field">
                 <span data-i18n="login.pickPass">Pick a password</span>
@@ -206,6 +234,14 @@
             <button type="button" class="view-switch-btn" data-mode="month" data-i18n="month">Month</button>
           </div>
           <div class="staff-week-hint staff-only" data-i18n="mine.hint">This week — times for each day</div>
+          <div class="home-screen-card js-home-card" hidden>
+            <strong data-i18n="home.title">Put ShiftBoard on your phone</strong>
+            <p class="field-hint js-home-help" data-i18n="home.ios">iPhone: tap Share, then Add to Home Screen.</p>
+            <div class="home-screen-actions">
+              <button type="button" class="btn btn-primary btn-wide js-home-install" hidden data-i18n="home.add">Add to Home Screen</button>
+              <button type="button" class="btn btn-ghost btn-wide js-home-dismiss" data-i18n="home.dismiss">Not now</button>
+            </div>
+          </div>
 
           <div id="week-summary" class="week-summary" hidden></div>
           <div id="next-shift-card" class="next-shift-card" hidden></div>
@@ -257,6 +293,7 @@
               <p id="team-range" class="page-sub">Everyone’s shifts</p>
             </div>
             <div class="head-actions">
+              <button type="button" class="btn btn-primary btn-compact" id="print-week" data-i18n="wall.print">Print this week</button>
               <button type="button" class="btn btn-soft btn-compact" id="export-excel" data-i18n="excel">Save Excel</button>
               <button type="button" class="btn btn-soft btn-compact" id="export-pdf" data-i18n="pdf">Save PDF</button>
               <button type="button" class="btn btn-soft btn-compact" id="share-team" data-i18n="share">Share</button>
@@ -288,15 +325,15 @@
             <div id="ai-thread" class="ai-thread" aria-live="polite"></div>
             <div class="ai-suggestions" id="ai-suggestions">
               <button type="button" class="quick-chip" data-ai-prompt="Who is working tomorrow?">Who works tomorrow?</button>
-              <button type="button" class="quick-chip" data-ai-prompt="Rose this month, two days off">Rose this month</button>
-              <button type="button" class="quick-chip" data-ai-prompt="Copy last week">Copy last week</button>
+              <button type="button" class="quick-chip" data-ai-prompt="Schedule Rose this month">Rose this month</button>
+              <button type="button" class="quick-chip" data-ai-prompt="Schedule my staff this month">My staff this month</button>
             </div>
             <form id="ai-form" class="ai-compose" novalidate>
               <textarea
                 id="ai-input"
                 rows="1"
                 data-i18n-placeholder="ai.placeholder"
-                placeholder="Rose this month, two days off"
+                placeholder="Schedule Rose this month"
               ></textarea>
               <button type="submit" class="btn btn-primary" id="ai-send" data-i18n="ai.send">Send</button>
             </form>
@@ -327,11 +364,11 @@
             <div class="field-grid">
               <label class="field">
                 <span data-i18n="start">Start</span>
-                <input id="open-start" type="time" required value="08:00" />
+                <input id="open-start" type="time" required value="09:30" />
               </label>
               <label class="field">
                 <span data-i18n="end">End</span>
-                <input id="open-end" type="time" required value="16:00" />
+                <input id="open-end" type="time" required value="17:00" />
               </label>
             </div>
             <label class="field">
@@ -344,7 +381,7 @@
             </label>
             <label class="field">
               <span><span data-i18n="note">Note</span> <span class="optional" data-i18n="optional">(optional)</span></span>
-              <input id="open-notes" type="text" placeholder="Cover for Linda" />
+              <input id="open-notes" type="text" placeholder="Cover for Rose" />
             </label>
             <button type="submit" class="btn btn-primary btn-wide" data-i18n="open.post">Post extra shift</button>
           </form>
@@ -430,11 +467,11 @@
               <div class="field-grid">
                 <label class="field">
                   <span data-i18n="start">Start</span>
-                  <input id="shift-start" type="time" required value="08:00" />
+                  <input id="shift-start" type="time" required value="09:30" />
                 </label>
                 <label class="field">
                   <span data-i18n="end">End</span>
-                  <input id="shift-end" type="time" required value="16:00" />
+                  <input id="shift-end" type="time" required value="17:00" />
                 </label>
               </div>
             </div>
@@ -565,7 +602,7 @@
     </div>
 
     <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
-    <script src="i18n.js?v=ai4"></script>
-    <script src="app.js?v=ai4"></script>
+    <script src="i18n.js?v=ai13"></script>
+    <script src="app.js?v=ai13"></script>
   </body>
 </html>

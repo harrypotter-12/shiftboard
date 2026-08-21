@@ -7,6 +7,7 @@
   const signupError = document.getElementById("signup-error");
   const namePicker = document.getElementById("name-picker");
   const namePickerEmpty = document.getElementById("name-picker-empty");
+  const nameSearch = document.getElementById("name-search");
   const loginStepName = document.getElementById("login-step-name");
   const loginStepPass = document.getElementById("login-step-pass");
   const loginStepSignup = document.getElementById("login-step-signup");
@@ -82,6 +83,13 @@
     return LANG_LOCALES[currentLang] || "en-US";
   }
 
+  function offReasonLabel(reason) {
+    const text = String(reason || "").trim();
+    if (!text) return "";
+    if (/^(off|day off|days off|asked in chat|two days off)$/i.test(text)) return "";
+    return text;
+  }
+
   function applyI18n() {
     document.documentElement.lang = currentLang === "pa" ? "pa" : currentLang === "fil" ? "fil" : currentLang;
     document.documentElement.dir = currentLang === "ar" ? "rtl" : "ltr";
@@ -135,6 +143,7 @@
     localStorage.setItem("shiftboard-lang", id);
     applyI18n();
     closeLangSheet();
+    syncHomeCards();
     if (currentUser) {
       helloLabel.textContent = t("hello.hi", { name: currentUser.name.split(" ")[0] });
       showView(currentViewName);
@@ -145,6 +154,7 @@
 
   let currentUser = null;
   let usersCache = [];
+  let staffNamesCache = [];
 
   function isLead(user = currentUser) {
     if (!user) return false;
@@ -405,17 +415,46 @@
     setTimeout(() => document.getElementById("signup-name").focus(), 80);
   }
 
+  function nameMatches(name, query) {
+    const n = String(name || "").toLowerCase();
+    const parts = String(query || "")
+      .toLowerCase()
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+    if (!parts.length) return true;
+    return parts.every(
+      (part) => n.includes(part) || n.split(/\s+/).some((word) => word.startsWith(part))
+    );
+  }
+
+  function matchingStaff() {
+    const query = String(nameSearch?.value || "").trim();
+    if (!query) return staffNamesCache;
+    return staffNamesCache.filter((s) => nameMatches(s.name, query));
+  }
+
   function renderNamePicker(staff) {
-    if (!staff.length) {
+    if (Array.isArray(staff)) staffNamesCache = staff;
+    const visible = matchingStaff();
+
+    if (!staffNamesCache.length) {
       namePicker.innerHTML = "";
       namePickerEmpty.hidden = false;
       namePickerEmpty.textContent = t("login.noAccounts");
       return;
     }
 
+    if (!visible.length) {
+      namePicker.innerHTML = "";
+      namePickerEmpty.hidden = false;
+      namePickerEmpty.textContent = t("login.noMatch");
+      return;
+    }
+
     namePickerEmpty.hidden = true;
     const last = localStorage.getItem("shiftboard-last-name") || "";
-    const sorted = [...staff].sort((a, b) => {
+    const sorted = [...visible].sort((a, b) => {
       const rank = (u) => {
         const n = String(u.name || "").trim().toLowerCase();
         if (n === "cathy") return 0;
@@ -453,6 +492,7 @@
       renderNamePicker(Array.isArray(data.staff) ? data.staff : []);
     } catch {
       namePicker.innerHTML = "";
+      staffNamesCache = [];
       namePickerEmpty.hidden = false;
       namePickerEmpty.textContent = t("login.loadFail");
     }
@@ -769,7 +809,7 @@
               (o) => `
           <div class="off-chip" style="--person-color:${escapeHtml(personColor(o))}">
             <span class="off-dot" aria-hidden="true"></span>
-            <span>${escapeHtml(o.staffName)} · ${escapeHtml(o.reason || "Off")}</span>
+            <span>${escapeHtml(o.staffName)}${offReasonLabel(o.reason) ? ` · ${escapeHtml(offReasonLabel(o.reason))}` : ""}</span>
           </div>`
             )
             .join("");
@@ -802,7 +842,7 @@
         <article class="off-card" data-off-id="${escapeHtml(o.id)}">
           <div>
             <strong>${escapeHtml(o.staffName)}</strong>
-            <small>${escapeHtml(formatDayLabel(o.date))} · ${escapeHtml(o.reason || "Off")}</small>
+            <small>${escapeHtml(formatDayLabel(o.date))}${offReasonLabel(o.reason) ? ` · ${escapeHtml(offReasonLabel(o.reason))}` : ""}</small>
           </div>
           <button type="button" class="btn btn-danger btn-mini" data-remove-off>Remove</button>
         </article>
@@ -837,7 +877,7 @@
     return `
       <div class="day-off-card">
         <strong>Off${off.staffName ? ` · ${escapeHtml(off.staffName)}` : ""}</strong>
-        <span>${escapeHtml(off.reason || "Day off")}</span>
+        ${offReasonLabel(off.reason) ? `<span>${escapeHtml(offReasonLabel(off.reason))}</span>` : ""}
       </div>
     `;
   }
@@ -1300,7 +1340,7 @@
               <article class="request-card" data-request-id="${escapeHtml(r.id)}">
                 <strong>${escapeHtml(r.staffName)}</strong>
                 <span>${escapeHtml(days)}</span>
-                <p>${escapeHtml(r.reason || "Day off")}</p>
+                ${offReasonLabel(r.reason) ? `<p>${escapeHtml(offReasonLabel(r.reason))}</p>` : ""}
                 <div class="shift-actions">
                   <button type="button" class="btn btn-primary" data-approve-off>${escapeHtml(t("pending.yes"))}</button>
                   <button type="button" class="btn btn-ghost" data-deny-off>${escapeHtml(t("pending.no"))}</button>
@@ -1609,8 +1649,8 @@
 
   function cellTextForPersonDay(shifts, offs) {
     if (offs?.length) {
-      const reason = offs.map((o) => o.reason || "Off").filter(Boolean);
-      return reason.length ? `Off (${reason.join("; ")})` : "Off";
+      const extra = offs.map((o) => offReasonLabel(o.reason)).filter(Boolean);
+      return extra.length ? `Off (${extra.join("; ")})` : "Off";
     }
     if (!shifts?.length) return "";
     return shifts
@@ -1741,13 +1781,63 @@
     }
   }
 
+  async function printThisWeek() {
+    try {
+      const grid = await buildWeekGrid();
+      const head = `<tr><th>Name</th>${grid.dayLabels.map((d) => `<th>${escapeHtml(d)}</th>`).join("")}</tr>`;
+      const body = grid.rows
+        .map((row) => {
+          const cells = row.cells
+            .map((c) => {
+              const off = /^off/i.test(c);
+              return `<td class="${off ? "is-off" : ""}">${escapeHtml(c || "")}</td>`;
+            })
+            .join("");
+          return `<tr><th>${escapeHtml(row.name)}</th>${cells}</tr>`;
+        })
+        .join("");
+      const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${escapeHtml(grid.title)}</title>
+        <style>
+          @page { size: landscape; margin: 0.4in; }
+          body { font-family: Nunito, Arial, sans-serif; color: #143652; margin: 0; }
+          .banner { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; }
+          h1 { font-size: 28px; margin: 0; }
+          .sub { font-size: 16px; font-weight: 700; color: #5c6b76; }
+          table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+          th, td { border: 2px solid #143652; padding: 10px 8px; vertical-align: middle; text-align: center; font-size: 15px; font-weight: 800; }
+          thead th { background: #143652; color: #fff; font-size: 14px; }
+          tbody th { text-align: left; background: #eaf3f8; width: 9rem; font-size: 16px; }
+          td.is-off { background: #f8e8e6; color: #b24a6b; }
+          @media print { .no-print { display: none !important; } }
+        </style></head><body>
+        <div class="banner">
+          <h1>Housekeeping · ShiftBoard</h1>
+          <div class="sub">${escapeHtml(grid.title)}</div>
+        </div>
+        <table><thead>${head}</thead><tbody>${body}</tbody></table>
+        <p class="no-print" style="margin-top:16px"><button onclick="window.print()" style="font-size:18px;padding:10px 18px">Print</button></p>
+        <script>window.onload=function(){window.print();}</script>
+        </body></html>`;
+      const win = window.open("", "_blank");
+      if (!win) {
+        showToast("Allow pop-ups to print.");
+        return;
+      }
+      win.document.open();
+      win.document.write(html);
+      win.document.close();
+    } catch (err) {
+      showToast(err.message || "Could not print");
+    }
+  }
+
   function resetShiftForm() {
     shiftForm.reset();
     document.getElementById("shift-id").value = "";
     shiftUser.value = "";
     selectedPeople = new Set();
-    document.getElementById("shift-start").value = "08:00";
-    document.getElementById("shift-end").value = "16:00";
+                document.getElementById("shift-start").value = "09:30";
+    document.getElementById("shift-end").value = "17:00";
     document.getElementById("shift-submit").textContent = "Save shift";
     document.getElementById("shift-cancel").hidden = true;
     document.querySelectorAll("#time-presets .quick-chip").forEach((b) => b.classList.remove("is-active"));
@@ -1836,6 +1926,20 @@
     if (!chip) return;
     showPasswordStep(chip.dataset.name);
   });
+
+  function runNameSearch(pickIfOne) {
+    renderNamePicker(staffNamesCache);
+    const visible = matchingStaff();
+    if (pickIfOne && visible.length === 1) showPasswordStep(visible[0].name);
+  }
+
+  document.getElementById("name-search-form")?.addEventListener("submit", (e) => {
+    e.preventDefault();
+    runNameSearch(true);
+  });
+
+  nameSearch?.addEventListener("input", () => runNameSearch(false));
+  nameSearch?.addEventListener("search", () => runNameSearch(true));
 
   document.getElementById("login-back").addEventListener("click", () => showNameStep());
   document.getElementById("go-signup")?.addEventListener("click", () => showSignupStep());
@@ -1931,6 +2035,7 @@
   document.getElementById("share-today")?.addEventListener("click", () => {
     shareText("Who's working today", shiftsToText(lastTeamShifts, "Who's working today"));
   });
+  document.getElementById("print-week")?.addEventListener("click", () => printThisWeek());
   document.getElementById("export-excel")?.addEventListener("click", () => exportWeekExcel());
   document.getElementById("export-pdf")?.addEventListener("click", () => exportWeekPdf());
 
@@ -2663,8 +2768,11 @@
     aiBubble("ai", t("ai.hello"));
   }
 
-  async function sendAiMessage(text) {
+  let aiPendingConfirm = "";
+
+  async function sendAiMessage(text, options = {}) {
     const message = String(text || "").trim();
+    const confirm = Boolean(options.confirm);
     if (!message) return;
     if (!currentUser) {
       showToast("Sign in first");
@@ -2675,9 +2783,11 @@
       return;
     }
     setupAiChat();
-    aiBubble("user", message);
-    aiHistory.push({ role: "user", content: message });
-    if (aiInput) aiInput.value = "";
+    if (!options.silent) {
+      aiBubble("user", message);
+      aiHistory.push({ role: "user", content: message });
+      if (aiInput) aiInput.value = "";
+    }
     const pending = aiBubble("ai", "Working on it…", true);
     if (aiSend) {
       aiSend.disabled = true;
@@ -2687,7 +2797,7 @@
       const res = await fetch("/api/ai-chat", {
         method: "POST",
         headers: authHeaders(),
-        body: JSON.stringify({ message, history: aiHistory.slice(-8) }),
+        body: JSON.stringify({ message, history: aiHistory.slice(-8), confirm }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "Could not ask");
@@ -2699,6 +2809,16 @@
         aiBubble("ai", reply);
       }
       aiHistory.push({ role: "assistant", content: reply });
+      if (data.needsConfirm) {
+        aiPendingConfirm = message;
+        const row = document.createElement("div");
+        row.className = "ai-confirm";
+        row.innerHTML = `<button type="button" class="btn btn-primary" data-ai-yes>${escapeHtml(t("ai.yes"))}</button>
+          <button type="button" class="btn btn-ghost" data-ai-no>${escapeHtml(t("ai.no"))}</button>`;
+        aiThread?.appendChild(row);
+      } else {
+        aiPendingConfirm = "";
+      }
       if (data.changed) {
         showToast("Schedule updated");
         loadManageShifts();
@@ -2721,9 +2841,6 @@
       if (aiThread) aiThread.scrollTop = aiThread.scrollHeight;
     }
   }
-      aiThread.scrollTop = aiThread.scrollHeight;
-    }
-  }
 
   aiForm?.addEventListener("submit", (e) => {
     e.preventDefault();
@@ -2742,6 +2859,75 @@
     if (!chip) return;
     sendAiMessage(chip.dataset.aiPrompt);
   });
+
+  aiThread?.addEventListener("click", (e) => {
+    if (e.target.closest("[data-ai-yes]") && aiPendingConfirm) {
+      e.target.closest(".ai-confirm")?.remove();
+      sendAiMessage(aiPendingConfirm, { confirm: true, silent: true });
+      return;
+    }
+    if (e.target.closest("[data-ai-no]")) {
+      e.target.closest(".ai-confirm")?.remove();
+      aiPendingConfirm = "";
+      aiBubble("ai", "Okay, I didn’t change the schedule.");
+    }
+  });
+
+  function isStandaloneApp() {
+    return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+  }
+
+  function isIosDevice() {
+    return /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  }
+
+  let deferredInstall = null;
+
+  function syncHomeCards() {
+    const hidden = isStandaloneApp() || localStorage.getItem("shiftboard-hide-home") === "1";
+    const ios = isIosDevice();
+    document.querySelectorAll(".js-home-help").forEach((el) => {
+      el.textContent = t(ios ? "home.ios" : "home.android");
+    });
+    document.querySelectorAll(".js-home-card").forEach((card) => {
+      card.hidden = hidden;
+    });
+    document.querySelectorAll(".js-home-install").forEach((btn) => {
+      btn.hidden = ios || !deferredInstall;
+    });
+  }
+
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    deferredInstall = e;
+    syncHomeCards();
+  });
+  window.addEventListener("appinstalled", () => {
+    deferredInstall = null;
+    localStorage.setItem("shiftboard-hide-home", "1");
+    syncHomeCards();
+    showToast(t("home.added"));
+  });
+
+  document.querySelectorAll(".js-home-dismiss").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      localStorage.setItem("shiftboard-hide-home", "1");
+      syncHomeCards();
+    });
+  });
+  document.querySelectorAll(".js-home-install").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      if (!deferredInstall) return;
+      deferredInstall.prompt();
+      await deferredInstall.userChoice.catch(() => {});
+      deferredInstall = null;
+      syncHomeCards();
+    });
+  });
+
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/sw.js").catch(() => {});
+  }
 
   async function boot() {
     await loadStaffNames();
@@ -2767,5 +2953,6 @@
 
   resetShiftForm();
   applyI18n();
+  syncHomeCards();
   boot();
 })();

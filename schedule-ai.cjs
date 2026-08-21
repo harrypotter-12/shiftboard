@@ -169,8 +169,19 @@ function parseMonthSpan(text, today) {
   return null;
 }
 
+function weekSpan(today, nextWeek) {
+  const start = startOfWeek(nextWeek ? addDays(today, 7) : today);
+  return Array.from({ length: 7 }, (_, i) => dateKey(addDays(start, i)));
+}
+
+function wantsWeekendsToo(text) {
+  const raw = String(text || "").toLowerCase();
+  return /\b(every day|all days|all week|7 days|including weekend|weekends?|saturday|sunday|sat\b|sun\b)\b/.test(raw);
+}
+
 function parseOffWeekdays(text) {
   const raw = String(text || "").toLowerCase();
+  if (!/\boff\b/.test(raw)) return [];
   if (/\bweekends?\s+off\b|\boff\s+(on\s+)?weekends?\b/.test(raw)) return [0, 6];
   const named = raw.match(
     /\b((?:mon(?:day)?|tue(?:sday|s)?|wed(?:nesday)?|thu(?:rsday|r|rs)?|fri(?:day)?|sat(?:urday)?|sun(?:day)?)(?:\s*(?:,|and|&)\s*(?:mon(?:day)?|tue(?:sday|s)?|wed(?:nesday)?|thu(?:rsday|r|rs)?|fri(?:day)?|sat(?:urday)?|sun(?:day)?))*)\s+off\b/
@@ -181,7 +192,7 @@ function parseOffWeekdays(text) {
   const blob = (named && named[1]) || (afterOff && afterOff[1]) || "";
   const fromBlob = weekdaysInText(blob);
   if (fromBlob.length) return fromBlob;
-  if (/\b(two|2)\s+days?\s+off\b/.test(raw) || /\bdays?\s+off\b/.test(raw)) return [0, 6];
+  if (/\b(two|2)\s+days?\s+off\b/.test(raw)) return [0, 6];
   return [];
 }
 
@@ -194,7 +205,13 @@ function parseDates(text, today) {
   };
 
   const monthDays = parseMonthSpan(raw, today);
-  if (monthDays) return monthDays;
+  if (monthDays) {
+    if (wantsWeekendsToo(raw)) return monthDays;
+    return monthDays.filter((key) => {
+      const day = toDate(key).getDay();
+      return day !== 0 && day !== 6;
+    });
+  }
 
   if (/\btoday\b/.test(raw)) push(today);
   if (/\btomorrow\b/.test(raw)) push(addDays(today, 1));
@@ -225,11 +242,12 @@ function parseDates(text, today) {
     }
   } else if (thisWeek || nextWeek || weekdays || weekend) {
     const start = startOfWeek(nextWeek ? addDays(today, 7) : today);
+    const allSeven = /\ball week\b/.test(raw) || wantsWeekendsToo(raw);
     for (let i = 0; i < 7; i += 1) {
       const d = addDays(start, i);
       const day = d.getDay();
-      if (weekdays && (day === 0 || day === 6)) continue;
       if (weekend && day !== 0 && day !== 6) continue;
+      if (!weekend && !allSeven && (thisWeek || nextWeek || weekdays) && (day === 0 || day === 6)) continue;
       push(d);
     }
   } else {
@@ -249,23 +267,42 @@ function parseDates(text, today) {
 function splitWorkAndOff(text, today) {
   const raw = String(text || "").toLowerCase();
   const monthDays = parseMonthSpan(raw, today);
-  const everyDay = /\b(every day|all days|no days off|7 days)\b/.test(raw);
-  let offDow = parseOffWeekdays(raw);
+  const offDow = parseOffWeekdays(raw);
+  const weekendKeys = (keys) => keys.filter((key) => {
+    const day = toDate(key).getDay();
+    return day === 0 || day === 6;
+  });
+
   if (monthDays) {
-    if (!offDow.length && !everyDay) offDow = [0, 6];
-    if (everyDay) offDow = [];
-    const workDates = monthDays.filter((key) => !offDow.includes(toDate(key).getDay()));
-    const offDates = monthDays.filter((key) => offDow.includes(toDate(key).getDay()));
-    return { workDates, offDates, isMonth: true };
+    const workDates = offDow.length
+      ? monthDays.filter((key) => !offDow.includes(toDate(key).getDay()))
+      : wantsWeekendsToo(raw)
+        ? monthDays
+        : monthDays.filter((key) => {
+            const day = toDate(key).getDay();
+            return day !== 0 && day !== 6;
+          });
+    const offDates = offDow.length ? monthDays.filter((key) => offDow.includes(toDate(key).getDay())) : [];
+    const clearOffDates = offDow.length ? [] : weekendKeys(monthDays);
+    return { workDates, offDates, clearOffDates, isMonth: true };
   }
+
   const workDates = parseDates(text, today);
-  if (!offDow.length) return { workDates, offDates: [], isMonth: false };
   const span = workDates.length
     ? workDates
-    : Array.from({ length: 7 }, (_, i) => dateKey(addDays(startOfWeek(today), i)));
-  const offDates = span.filter((key) => offDow.includes(toDate(key).getDay()));
+    : weekSpan(today, /\bnext week\b/.test(raw));
+  const weekKeys = /\b(this week|next week|all week)\b/.test(raw) ? weekSpan(today, /\bnext week\b/.test(raw)) : span;
+  if (!offDow.length) {
+    return {
+      workDates,
+      offDates: [],
+      clearOffDates: weekendKeys(weekKeys),
+      isMonth: false,
+    };
+  }
+  const offDates = weekKeys.filter((key) => offDow.includes(toDate(key).getDay()));
   const work = workDates.filter((key) => !offDow.includes(toDate(key).getDay()));
-  return { workDates: work, offDates, isMonth: false };
+  return { workDates: work, offDates, clearOffDates: [], isMonth: false };
 }
 
 function escapeRe(s) {
@@ -299,6 +336,10 @@ function findPeople(text, users) {
     const pattern = new RegExp(parts.map((p) => `\\b${escapeRe(p)}\\b`).join("|"), "i");
     if (pattern.test(raw) && !found.some((p) => p.id === person.id)) found.push(person);
   }
+  if (/\b(me|myself|me too)\b/i.test(raw)) {
+    const jash = findJash(users);
+    if (jash && !found.some((p) => p.id === jash.id)) found.push(jash);
+  }
   return found;
 }
 
@@ -315,84 +356,101 @@ function wantsList(text) {
   return /^(who\b|who's\b|whos\b|show\b|list\b)|who is working|who's working|who works|who is on|who's on|coverage|what('s|s) on\b/.test(t);
 }
 
-function wantsEveryone(text) {
-  return /\b(everyone|everybody|all staff|all people)\b/i.test(String(text || ""));
+function isCathy(person) {
+  const role = String(person?.role || "").toLowerCase();
+  const n = String(person?.name || "").trim().toLowerCase();
+  return role === "manager" || n === "cathy";
+}
+
+function scheduleTeam(users) {
+  return (users || []).filter((u) => u.active !== false && !isCathy(u));
+}
+
+function findJash(users) {
+  return (users || []).find((u) => u.active !== false && /^jash$/i.test(String(u.name || "").trim())) || null;
+}
+
+function wantsTeam(text) {
+  return /\b(everyone|everybody|all staff|my staff|the staff|all people|all names|housekeeping|the team|whole team|all the girls|the girls|every staff|any staff)\b/i.test(
+    String(text || "")
+  );
 }
 
 function planFromMessage(message, context) {
   const text = String(message || "").trim();
   const today = atNoon(context.today || new Date());
   const users = context.users || [];
-  const shifts = context.shifts || [];
   const lower = text.toLowerCase();
 
   if (!text) {
     return { reply: "What should I put on the schedule?", actions: [] };
   }
 
-  if (wantsEveryone(text)) {
-    return {
-      reply: "Tell me the names you want on that day.",
-      actions: [],
-    };
-  }
-
   if (/\b(copy last week|copy the last week|same as last week)\b/.test(lower)) {
     return { reply: "Copying last week onto this week.", actions: [{ type: "copy_week" }] };
   }
 
-  const people = findPeople(text, users);
-  const window = splitWorkAndOff(text, today);
-  const dates = window.workDates;
+  let people = wantsTeam(text) ? scheduleTeam(users) : findPeople(text, users);
+  let window = splitWorkAndOff(text, today);
   const times = parseTimes(text);
   const area = findArea(text);
-  const wantOffOnly = /\boff\b/.test(lower) && !window.isMonth && !dates.length;
+  const wantOffOnly = /\boff\b/.test(lower) && !window.isMonth && !window.workDates.length;
   const wantRemove = /\b(remove|cancel|delete|clear|take off the shift|no shift)\b/.test(lower);
 
   if (wantsList(text) && !wantRemove && !window.offDates.length && !window.isMonth) {
-    const day = dates[0] || dateKey(today);
+    const day = window.workDates[0] || dateKey(today);
     return { reply: `Here’s who is on ${formatNice(day)}.`, actions: [{ type: "list", date: day }] };
   }
 
   if (wantOffOnly) {
-    const offDates = window.offDates.length ? window.offDates : dates;
+    const offDates = window.offDates.length ? window.offDates : window.workDates;
     if (!people.length || !offDates.length) {
       return { reply: "Say the name and the off days, like “Rose Saturday and Sunday off”.", actions: [] };
     }
     const actions = [];
     for (const person of people) {
-      for (const date of offDates) actions.push({ type: "day_off", name: person.name, date, reason: "Asked in chat" });
+      for (const date of offDates) actions.push({ type: "day_off", name: person.name, date, reason: "Off" });
     }
     return { reply: `Marked off: ${people.map((p) => p.name).join(", ")}.`, actions };
   }
 
   if (wantRemove) {
-    if (!people.length || !dates.length) {
+    if (!people.length || !window.workDates.length) {
       return { reply: "Say which name and which day to take off.", actions: [] };
     }
     const actions = [];
     for (const person of people) {
-      for (const date of dates) actions.push({ type: "remove_shifts", name: person.name, date });
+      for (const date of window.workDates) actions.push({ type: "remove_shifts", name: person.name, date });
     }
     return { reply: "I’ll take those shifts off.", actions };
   }
 
+  if (people.length && !window.workDates.length && !window.offDates.length) {
+    window = splitWorkAndOff("this week", today);
+  }
+
+  const dates = window.workDates;
+
   if (people.length && (dates.length || window.offDates.length)) {
-    const start = times?.start || "08:00";
-    const end = times?.end || "16:00";
+    const start = times?.start || "09:30";
+    const end = times?.end || "17:00";
     const actions = [];
     for (const person of people) {
       for (const date of dates) {
         actions.push({ type: "add_shift", name: person.name, date, start, end, area });
       }
       for (const date of window.offDates) {
-        actions.push({ type: "day_off", name: person.name, date, reason: "Two days off" });
+        actions.push({ type: "day_off", name: person.name, date, reason: "Off" });
+      }
+      for (const date of window.clearOffDates || []) {
+        if (window.offDates.includes(date) || dates.includes(date)) continue;
+        actions.push({ type: "clear_off", name: person.name, date });
       }
     }
-    if (actions.length > 90) {
-      return { reply: "That’s a lot at once. Try one person for the month.", actions: [] };
+    if (actions.length > 1200) {
+      return { reply: "That’s too many days at once. Try this week, or one person for the month.", actions: [] };
     }
-    const who = people.map((p) => p.name).join(", ");
+    const who = people.length > 3 ? `${people.length} people` : people.map((p) => p.name).join(", ");
     if (!dates.length && window.offDates.length) {
       return {
         reply: `Marked ${who} off ${window.offDates.map(formatNice).join(", ")}.`,
@@ -409,20 +467,20 @@ function planFromMessage(message, context) {
 
   if (people.length && !dates.length) {
     return {
-      reply: `Got ${people.map((p) => p.name).join(", ")}. Which day? Say tomorrow, Monday, or this week.`,
+      reply: `Got ${people.map((p) => p.name).join(", ")}. Which day? Say tomorrow, Monday, or this month.`,
       actions: [],
     };
   }
 
   if (dates.length && !people.length) {
     return {
-      reply: `Which names for ${formatNice(dates[0])}?`,
+      reply: `Which names for ${formatNice(dates[0])}? Or say my staff.`,
       actions: [],
     };
   }
 
   return {
-    reply: "Try: Rose Monday 9 to 5.",
+    reply: "Try: Rose this month, or schedule my staff this week.",
     actions: [],
   };
 }
@@ -456,13 +514,15 @@ Today is ${dateKey(today)}. People: ${staffDigest(context.users || [])}.
 This week:\n${weekDigest(context.shifts || [], today)}
 Reply with JSON only: {"reply":"short friendly sentence","actions":[...]}
 Action types:
-- {"type":"add_shift","name":"Rose","date":"YYYY-MM-DD","start":"09:00","end":"17:00","area":""}
+- {"type":"add_shift","name":"Rose","date":"YYYY-MM-DD","start":"09:30","end":"17:00","area":""}
 - {"type":"remove_shifts","name":"Rose","date":"YYYY-MM-DD"}
 - {"type":"day_off","name":"Rose","date":"YYYY-MM-DD","reason":""}
 - {"type":"list","date":"YYYY-MM-DD"}
-- {"type":"copy_week"}
-If the user wants a whole month, add a shift for each work day and day_off for the two days off (default Saturday and Sunday unless they name other days).
-If time is missing, use 08:00-16:00. If the user says Rose, that is Ruby Rose Ann. Keep reply under 40 words. Never add "everyone".`;
+- {"type":"clear_off","name":"Rose","date":"YYYY-MM-DD"}
+If the user wants a whole month, add Monday–Friday shifts only. Do not mark Saturday or Sunday off unless they say days off, weekends off, or name those days.
+If they say my staff, everyone, or the team, schedule all housekeeping staff plus Jash. Do not add Cathy unless her name is used. Cathy is the manager; Jash is admin and should be on the board when they say my staff, me, or Jash.
+If a name is given with no day, fill this week Monday to Friday, 09:30-17:00. Do not mark Saturday or Sunday as days off unless the user asks for days off.
+If time is missing, use 09:30-17:00. If the user says Rose, that is Ruby Rose Ann. Keep reply under 40 words.`;
 
   const messages = [
     { role: "system", content: system },
@@ -532,6 +592,23 @@ async function planChat(message, history, context) {
       return n === key || parts[0] === key || parts.some((p) => p === key && p.length >= 4);
     });
   });
+  const names = new Set();
+  for (const action of actions) {
+    const name = String(action?.name || "").trim();
+    if (name && (action.type === "add_shift" || action.type === "day_off")) names.add(name.toLowerCase());
+  }
+  if (names.size >= 4 && !context.confirmed) {
+    const sample = actions.find((a) => a.type === "add_shift");
+    const start = sample?.start || "09:30";
+    const end = sample?.end || "17:00";
+    const days = new Set(actions.filter((a) => a.type === "add_shift").map((a) => a.date)).size;
+    const when = days === 1 ? "1 day" : `${days || 0} days`;
+    return {
+      reply: `This will put ${names.size} people on the board for ${when}, ${start}–${end}. Tap Yes to save it.`,
+      actions: [],
+      needsConfirm: true,
+    };
+  }
   return { reply: planned.reply, actions };
 }
 

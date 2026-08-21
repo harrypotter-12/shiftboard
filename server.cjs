@@ -413,8 +413,13 @@ function markDaysOff(userId, dates, reason, createdBy) {
   return { created, person };
 }
 
-function isOff(userId, date) {
-  return readOffDays().some((o) => o.userId === userId && o.date === date);
+function clearDaysOff(userId, dates) {
+  const dateSet = new Set(dates);
+  const list = readOffDays();
+  const next = list.filter((o) => !(o.userId === userId && dateSet.has(o.date)));
+  const gone = list.length - next.length;
+  if (gone) writeOffDays(next);
+  return gone;
 }
 
 function toDateParts(dateStr) {
@@ -584,11 +589,17 @@ function applyAiPlan(plan, manager, users) {
   const notes = [];
   let made = 0;
   let listText = "";
+  const shifts = readShifts();
+  const offByUser = new Map();
+  const clearByUser = new Map();
 
-  for (const action of actions.slice(0, 90)) {
+  for (const action of actions.slice(0, 1200)) {
     const type = String(action?.type || "");
     if (type === "copy_week") {
+      writeShifts(shifts);
       const copy = copyLastWeekShifts();
+      shifts.length = 0;
+      shifts.push(...readShifts());
       if (!copy.hadSource) notes.push("Last week had no shifts to copy.");
       else if (!copy.copied) notes.push("This week already had those shifts.");
       else {
@@ -601,7 +612,7 @@ function applyAiPlan(plan, manager, users) {
     if (type === "list") {
       const date = String(action.date || "");
       if (!isValidDate(date)) continue;
-      const on = readShifts()
+      const on = shifts
         .filter((s) => s.date === date)
         .map((s) => enrichShift(s, users))
         .sort((a, b) => String(a.start).localeCompare(String(b.start)));
@@ -613,7 +624,7 @@ function applyAiPlan(plan, manager, users) {
     }
 
     const person = findActiveByName(action.name, users);
-    if (!person && (type === "add_shift" || type === "remove_shifts" || type === "day_off")) {
+    if (!person && (type === "add_shift" || type === "remove_shifts" || type === "day_off" || type === "clear_off")) {
       notes.push(`I don’t have a name “${action.name || ""}”.`);
       continue;
     }
@@ -621,23 +632,30 @@ function applyAiPlan(plan, manager, users) {
     if (type === "remove_shifts") {
       const date = String(action.date || "");
       if (!isValidDate(date)) continue;
-      const list = readShifts();
-      const next = list.filter((s) => !(s.userId === person.id && s.date === date));
-      const gone = list.length - next.length;
-      if (gone) {
-        writeShifts(next);
-        made += gone;
-        notes.push(`Removed ${person.name} on ${date}.`);
-      } else notes.push(`${person.name} had no shift on ${date}.`);
+      const before = shifts.length;
+      for (let i = shifts.length - 1; i >= 0; i -= 1) {
+        if (shifts[i].userId === person.id && shifts[i].date === date) shifts.splice(i, 1);
+      }
+      const gone = before - shifts.length;
+      if (gone) made += gone;
+      continue;
+    }
+
+    if (type === "clear_off") {
+      const date = String(action.date || "");
+      if (!isValidDate(date)) continue;
+      const list = clearByUser.get(person.id) || [];
+      if (!list.includes(date)) list.push(date);
+      clearByUser.set(person.id, list);
       continue;
     }
 
     if (type === "day_off") {
       const date = String(action.date || "");
       if (!isValidDate(date)) continue;
-      markDaysOff(person.id, [date], String(action.reason || "Asked in chat"), manager.id);
-      notes.push(`${person.name} is off ${date}.`);
-      made += 1;
+      const list = offByUser.get(person.id) || [];
+      if (!list.includes(date)) list.push(date);
+      offByUser.set(person.id, list);
       continue;
     }
 
@@ -645,23 +663,15 @@ function applyAiPlan(plan, manager, users) {
       const date = String(action.date || "");
       const start = padTime(action.start);
       const end = padTime(action.end);
-      if (!isValidDate(date) || !isValidTime(start) || !isValidTime(end) || end <= start) {
-        notes.push(`Could not add ${person.name}: check the day and times.`);
-        continue;
-      }
-      if (isOff(person.id, date)) {
-        notes.push(`${person.name} is marked off on ${date}.`);
-        continue;
-      }
-      const list = readShifts();
-      const already = list.some(
+      if (!isValidDate(date) || !isValidTime(start) || !isValidTime(end) || end <= start) continue;
+      const clearList = clearByUser.get(person.id) || [];
+      if (!clearList.includes(date)) clearList.push(date);
+      clearByUser.set(person.id, clearList);
+      const already = shifts.some(
         (s) => s.userId === person.id && s.date === date && s.start === start && s.end === end
       );
-      if (already) {
-        notes.push(`${person.name} already has ${start}–${end} on ${date}.`);
-        continue;
-      }
-      const entry = {
+      if (already) continue;
+      shifts.push({
         id: randomUUID(),
         userId: person.id,
         date,
@@ -672,15 +682,24 @@ function applyAiPlan(plan, manager, users) {
         createdAt: Date.now(),
         updatedAt: Date.now(),
         createdBy: manager.id,
-      };
-      list.push(entry);
-      writeShifts(list);
+      });
       made += 1;
     }
   }
 
+  writeShifts(shifts);
+  for (const [userId, dates] of clearByUser) {
+    const gone = clearDaysOff(userId, dates);
+    if (gone) made += gone;
+  }
+  for (const [userId, dates] of offByUser) {
+    const { created } = markDaysOff(userId, dates, "Off", manager.id);
+    made += created.length;
+  }
+
   const parts = [String(plan?.reply || "").trim()];
   if (listText.trim()) parts.push(listText.trim());
+  if (notes.length > 8) notes.length = 8;
   if (notes.length) parts.push(notes.join(" "));
   return {
     reply: parts.filter(Boolean).join("\n\n"),
@@ -1728,7 +1747,16 @@ async function handleApi(req, res, urlPath) {
       users,
       shifts,
       today: new Date(),
+      confirmed: Boolean(body.confirm),
     });
+    if (plan.needsConfirm && !body.confirm) {
+      sendJson(res, 200, {
+        reply: plan.reply,
+        changed: false,
+        needsConfirm: true,
+      });
+      return;
+    }
     const result = applyAiPlan(plan, manager, users);
     sendJson(res, 200, result);
     return;

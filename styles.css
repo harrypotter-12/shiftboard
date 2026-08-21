@@ -80,9 +80,9 @@ button {
   min-height: 100vh;
   min-height: 100dvh;
   display: grid;
-  place-items: center;
+  place-items: start center;
   padding: 1.25rem;
-  overflow: hidden;
+  overflow: auto;
   background: linear-gradient(160deg, #102c45 0%, #184862 42%, #1f6a6a 100%);
 }
 
@@ -197,10 +197,53 @@ button {
 .name-picker {
   display: grid;
   gap: 0.65rem;
-  margin-top: 1rem;
+  margin-top: 0.75rem;
   max-height: min(48vh, 380px);
   overflow: auto;
+  -webkit-overflow-scrolling: touch;
   padding-right: 0.15rem;
+}
+
+.name-search-form {
+  margin-top: 0.85rem;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.name-search-field {
+  margin: 0;
+}
+
+.name-search-box {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: stretch;
+  border: 2px solid var(--line-strong);
+  border-radius: 16px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.name-search-box:focus-within {
+  border-color: var(--sea);
+  box-shadow: 0 0 0 4px rgba(44, 155, 127, 0.18);
+}
+
+.name-search-box input {
+  min-height: 3.2rem;
+  font-size: 1.15rem;
+  font-weight: 700;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0;
+  padding: 0.7rem 0.9rem;
+}
+
+.name-search-btn {
+  border-radius: 0;
+  min-height: 3.2rem;
+  padding: 0 1.05rem;
+  font-size: 1.05rem;
 }
 
 .name-chip {
@@ -1846,7 +1889,42 @@ body[data-role="admin"] .staff-only {
   color: var(--navy-deep);
 }
 
-.ai-thread {
+.home-screen-card {
+  margin-top: 1rem;
+  padding: 0.95rem 1rem;
+  border-radius: 18px;
+  border: 1.5px solid #c4e5db;
+  background: var(--sea-soft);
+  display: grid;
+  gap: 0.45rem;
+}
+
+.home-screen-card strong {
+  color: var(--navy-deep);
+  font-size: 1.08rem;
+}
+
+.home-screen-card .field-hint {
+  margin: 0;
+}
+
+.home-screen-actions {
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 0.25rem;
+}
+
+.ai-confirm {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.35rem;
+}
+
+.ai-confirm .btn {
+  min-height: 2.6rem;
+  padding: 0 1rem;
+}
   display: grid;
   gap: 0.5rem;
   min-height: 0;
